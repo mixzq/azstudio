@@ -138,7 +138,7 @@ body {
   z-index: 4;
   width: min(86vw, 1180px);
   height: 260px;
-  translate: -50% -50%;
+  transform: translate(-50%, -50%);
   display: grid;
   place-items: center;
   filter: url(#threshold);
@@ -150,7 +150,6 @@ body {
   left: 50%;
   top: 50%;
   width: 100%;
-  translate: -50% -50%;
   color: var(--ink);
   font-family: "ITCAvantGardeLocal", "ITC Avant Garde Gothic", "Avant Garde", "Avenir Next", "Helvetica Neue", sans-serif;
   font-size: clamp(66px, 11vw, 160px);
@@ -162,7 +161,7 @@ body {
   user-select: none;
   opacity: 0;
   filter: blur(70px);
-  transform: scale(0.985);
+  transform: translate(-50%, -50%) scale(var(--text-scale, 0.985));
   will-change: opacity, filter, transform;
   text-shadow: 0 0 32px rgba(241, 238, 231, 0.08);
 }
@@ -236,7 +235,7 @@ body {
     0 calc(16px + var(--work-card-depth) * 14px) calc(34px + var(--work-card-depth) * 30px) rgba(0, 0, 0, calc(0.32 + var(--work-card-depth) * 0.08)),
     0 0 calc(18px + var(--work-card-depth) * 18px) rgba(241, 238, 231, 0.035);
   pointer-events: auto;
-  translate: -50% -50%;
+  transform: translate(-50%, -50%);
   will-change: transform;
 }
 
@@ -282,11 +281,10 @@ body {
   bottom: clamp(38px, 10vh, 112px);
   z-index: 5;
   width: min(70vw, 720px);
-  translate: -50% 0;
   text-align: center;
   opacity: 0;
   filter: blur(18px);
-  transform: translateY(26px);
+  transform: translateX(-50%) translateY(26px);
   will-change: opacity, filter, transform;
 }
 

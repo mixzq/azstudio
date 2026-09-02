@@ -87,8 +87,8 @@ function getTextMorphStyle(presence: number, scaleLift = 0, linear = false): CSS
   return {
     opacity: Math.pow(easedPresence, 0.42),
     filter: `blur(${blur}px)`,
-    transform: `scale(${scale})`
-  };
+    '--text-scale': scale
+  } as CSSProperties;
 }
 
 function useStoryboardMotion() {
@@ -344,7 +344,7 @@ function ContactPanel({ progress }: { progress: number }) {
       style={{
         opacity: presence,
         filter: `blur(${(18 * (1 - presence)).toFixed(2)}px)`,
-        transform: `translateY(${(26 * (1 - presence)).toFixed(2)}px)`
+        transform: `translateX(-50%) translateY(${(26 * (1 - presence)).toFixed(2)}px)`
       }}
     >
       <a href="mailto:hello@azstudio.com">hello@azstudio.com</a>
