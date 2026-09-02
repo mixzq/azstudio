@@ -6,7 +6,8 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef
+  useRef,
+  useState
 } from 'react';
 
 type FloatingContextType = {
@@ -42,18 +43,58 @@ type WorkCard = {
   y: number;
   width: string;
   tone: string;
+  title: string;
+  category: string;
+  image: string;
 };
 
 const FloatingContext = createContext<FloatingContextType | null>(null);
 
 const cards: WorkCard[] = [
-  { id: 'identity', depth: 0.5, x: 8, y: 12, width: 'clamp(96px, 12vw, 172px)', tone: 'warm' },
-  { id: 'system', depth: 0.68, x: 28, y: 18, width: 'clamp(108px, 13vw, 188px)', tone: 'blue' },
-  { id: 'campaign', depth: 1.26, x: 57, y: 7, width: 'clamp(160px, 21vw, 312px)', tone: 'olive' },
-  { id: 'editorial', depth: 0.58, x: 86, y: 11, width: 'clamp(98px, 12vw, 168px)', tone: 'rose' },
-  { id: 'motion', depth: 1.48, x: 3, y: 62, width: 'clamp(168px, 22vw, 330px)', tone: 'charcoal' },
-  { id: 'archive', depth: 0.92, x: 45, y: 76, width: 'clamp(132px, 16vw, 232px)', tone: 'gold' },
-  { id: 'space', depth: 1.08, x: 75, y: 65, width: 'clamp(142px, 18vw, 270px)', tone: 'paper' }
+  {
+    id: 'identity',
+    depth: 0.62,
+    x: 16,
+    y: 20,
+    width: 'clamp(132px, 16vw, 230px)',
+    tone: 'warm',
+    title: 'Identity Study',
+    category: 'Brand System',
+    image: '/PIC/Frame 146.png'
+  },
+  {
+    id: 'system',
+    depth: 1.16,
+    x: 42,
+    y: 12,
+    width: 'clamp(150px, 18vw, 270px)',
+    tone: 'blue',
+    title: 'Interface Rhythm',
+    category: 'Digital Product',
+    image: '/PIC/Frame 147.png'
+  },
+  {
+    id: 'campaign',
+    depth: 0.88,
+    x: 68,
+    y: 68,
+    width: 'clamp(142px, 17vw, 252px)',
+    tone: 'olive',
+    title: 'Campaign Frame',
+    category: 'Creative Direction',
+    image: '/PIC/Frame 148.png'
+  },
+  {
+    id: 'editorial',
+    depth: 1.36,
+    x: 88,
+    y: 24,
+    width: 'clamp(124px, 15vw, 220px)',
+    tone: 'rose',
+    title: 'Editorial Motion',
+    category: 'Visual Story',
+    image: '/PIC/Frame 149.png'
+  }
 ];
 
 function joinClass(...classes: Array<string | undefined>) {
@@ -188,36 +229,85 @@ function FloatingElement({ children, className, depth = 0.3 }: FloatingElementPr
 }
 
 export function WorksFloatingCards({ progress }: { progress: number }) {
+  const [selectedWork, setSelectedWork] = useState<WorkCard | null>(null);
   const enter = easeOut(map(progress, 0.5, 0.64, 0, 1));
   const leave = easeInOut(map(progress, 0.79, 0.92, 0, 1));
   const presence = clamp(enter * (1 - leave));
 
+  useEffect(() => {
+    if (!selectedWork) return undefined;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSelectedWork(null);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedWork]);
+
   return (
-    <FloatingLayer
-      className="works-board"
-      sensitivity={0.85}
-      easingFactor={0.06}
-      maxShift={112}
-      style={{
-        opacity: Math.pow(presence, 0.72),
-        filter: `blur(${(18 * (1 - presence)).toFixed(2)}px)`,
-        pointerEvents: presence > 0.03 ? 'auto' : 'none'
-      }}
-    >
-      {cards.map((card) => (
-        <FloatingElement key={card.id} depth={card.depth} className="works-card-position">
-          <article
-            className={`works-card works-card-${card.tone}`}
-            style={{
-              '--work-card-x': `${card.x}%`,
-              '--work-card-y': `${card.y}%`,
-              '--work-card-width': card.width,
-              '--work-card-depth': card.depth
-            } as CSSProperties}
-            aria-label={`Work preview ${card.id}`}
-          />
-        </FloatingElement>
-      ))}
-    </FloatingLayer>
+    <>
+      <FloatingLayer
+        className="works-board"
+        sensitivity={0.85}
+        easingFactor={0.06}
+        maxShift={112}
+        style={{
+          opacity: Math.pow(presence, 0.72),
+          filter: `blur(${(18 * (1 - presence)).toFixed(2)}px)`,
+          pointerEvents: presence > 0.03 ? 'auto' : 'none'
+        }}
+      >
+        {cards.map((card) => (
+          <FloatingElement key={card.id} depth={card.depth} className="works-card-position">
+            <button
+              className={`works-card works-card-${card.tone}`}
+              type="button"
+              onClick={() => setSelectedWork(card)}
+              style={{
+                '--work-card-x': `${card.x}%`,
+                '--work-card-y': `${card.y}%`,
+                '--work-card-width': card.width,
+                '--work-card-depth': card.depth
+              } as CSSProperties}
+              aria-label={`Open ${card.title}`}
+            >
+              <img src={card.image} alt="" loading="eager" />
+              <span className="works-card-meta">
+                <span>{card.category}</span>
+                <strong>{card.title}</strong>
+              </span>
+            </button>
+          </FloatingElement>
+        ))}
+      </FloatingLayer>
+
+      {selectedWork && (
+        <section className="work-detail" aria-modal="true" role="dialog" aria-label={`${selectedWork.title} detail`}>
+          <button className="work-detail-backdrop" type="button" aria-label="Close work detail" onClick={() => setSelectedWork(null)} />
+          <article className="work-detail-panel">
+            <button className="work-detail-close" type="button" onClick={() => setSelectedWork(null)}>
+              Close
+            </button>
+            <div className="work-detail-image">
+              <img src={selectedWork.image} alt="" />
+            </div>
+            <div className="work-detail-copy">
+              <p>{selectedWork.category}</p>
+              <h2>{selectedWork.title}</h2>
+              <span>Temporary case study frame</span>
+              <div className="work-detail-grid" aria-label="Work detail placeholders">
+                <div>Overview</div>
+                <div>Role</div>
+                <div>Process</div>
+                <div>Outcome</div>
+              </div>
+            </div>
+          </article>
+        </section>
+      )}
+    </>
   );
 }
