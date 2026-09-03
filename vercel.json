@@ -1,4 +1,16 @@
 {
+  "redirects": [
+    {
+      "source": "/admin",
+      "destination": "https://mixzq9.wordpress.com/wp-admin/",
+      "permanent": false
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "https://mixzq9.wordpress.com/wp-admin/:path*",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!assets/|fonts/|favicon.ico|robots.txt).*)",
