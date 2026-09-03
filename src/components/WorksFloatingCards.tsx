@@ -9,6 +9,7 @@ import {
   useRef,
   useState
 } from 'react';
+import { WordPressWork, getWordPressWorks } from '../lib/wordpress';
 
 type FloatingContextType = {
   registerElement: (id: string, element: HTMLDivElement, depth: number) => void;
@@ -46,56 +47,144 @@ type WorkCard = {
   title: string;
   category: string;
   image: string;
+  excerpt: string;
+  contentHtml: string;
+  sourceUrl?: string;
 };
+
+type WorkSlot = Pick<WorkCard, 'depth' | 'x' | 'y' | 'width' | 'tone' | 'image'>;
 
 const FloatingContext = createContext<FloatingContextType | null>(null);
 
-const cards: WorkCard[] = [
+const workSlots: WorkSlot[] = [
   {
-    id: 'identity',
     depth: 0.62,
-    x: 16,
+    x: 13,
     y: 20,
-    width: 'clamp(132px, 16vw, 230px)',
+    width: 'clamp(120px, 13vw, 200px)',
     tone: 'warm',
-    title: 'Identity Study',
-    category: 'Brand System',
     image: '/PIC/Frame 146.png'
   },
   {
-    id: 'system',
     depth: 1.16,
-    x: 42,
+    x: 36,
     y: 12,
-    width: 'clamp(150px, 18vw, 270px)',
+    width: 'clamp(180px, 19.5vw, 300px)',
     tone: 'blue',
-    title: 'Interface Rhythm',
-    category: 'Digital Product',
     image: '/PIC/Frame 147.png'
   },
   {
-    id: 'campaign',
     depth: 0.88,
-    x: 68,
+    x: 58,
     y: 68,
-    width: 'clamp(142px, 17vw, 252px)',
+    width: 'clamp(144px, 15.6vw, 240px)',
     tone: 'olive',
-    title: 'Campaign Frame',
-    category: 'Creative Direction',
     image: '/PIC/Frame 148.png'
   },
   {
-    id: 'editorial',
     depth: 1.36,
-    x: 88,
+    x: 83,
     y: 24,
-    width: 'clamp(124px, 15vw, 220px)',
+    width: 'clamp(156px, 16.9vw, 260px)',
     tone: 'rose',
-    title: 'Editorial Motion',
-    category: 'Visual Story',
     image: '/PIC/Frame 149.png'
+  },
+  {
+    depth: 0.74,
+    x: 21,
+    y: 61,
+    width: 'clamp(132px, 14.3vw, 220px)',
+    tone: 'charcoal',
+    image: '/PIC/Frame 146.png'
+  },
+  {
+    depth: 1.04,
+    x: 46,
+    y: 39,
+    width: 'clamp(168px, 18.2vw, 280px)',
+    tone: 'gold',
+    image: '/PIC/Frame 147.png'
+  },
+  {
+    depth: 0.68,
+    x: 72,
+    y: 48,
+    width: 'clamp(120px, 13vw, 200px)',
+    tone: 'paper',
+    image: '/PIC/Frame 148.png'
+  },
+  {
+    depth: 1.24,
+    x: 91,
+    y: 72,
+    width: 'clamp(180px, 19.5vw, 300px)',
+    tone: 'warm',
+    image: '/PIC/Frame 149.png'
+  },
+  {
+    depth: 0.96,
+    x: 8,
+    y: 78,
+    width: 'clamp(144px, 15.6vw, 240px)',
+    tone: 'blue',
+    image: '/PIC/Frame 146.png'
+  },
+  {
+    depth: 1.42,
+    x: 64,
+    y: 18,
+    width: 'clamp(156px, 16.9vw, 260px)',
+    tone: 'olive',
+    image: '/PIC/Frame 147.png'
   }
 ];
+
+const fallbackWorks: Array<Omit<WorkCard, keyof WorkSlot>> = [
+  {
+    id: 'identity',
+    title: 'Identity Study',
+    category: 'Brand System',
+    excerpt: 'A compact identity direction prepared as the first local work sample.',
+    contentHtml: ''
+  },
+  {
+    id: 'system',
+    title: 'Interface Rhythm',
+    category: 'Digital Product',
+    excerpt: 'A product interface study for spacing, motion, and visual hierarchy.',
+    contentHtml: ''
+  },
+  {
+    id: 'campaign',
+    title: 'Campaign Frame',
+    category: 'Creative Direction',
+    excerpt: 'A campaign frame exploring image, typography, and composition.',
+    contentHtml: ''
+  },
+  {
+    id: 'editorial',
+    title: 'Editorial Motion',
+    category: 'Visual Story',
+    excerpt: 'A visual story sample built around editorial rhythm and motion.',
+    contentHtml: ''
+  }
+];
+
+function composeCards(cmsWorks: WordPressWork[] = []): WorkCard[] {
+  const works = cmsWorks.length > 0 ? cmsWorks.slice(0, workSlots.length) : fallbackWorks;
+
+  return works.map((work, index) => {
+    const cmsWork = cmsWorks[index];
+    const slot = workSlots[index];
+
+    return {
+      ...slot,
+      ...work,
+      image: cmsWork?.image ?? slot.image,
+      id: cmsWork?.id ?? work.id
+    };
+  });
+}
 
 function joinClass(...classes: Array<string | undefined>) {
   return classes.filter(Boolean).join(' ');
@@ -230,9 +319,26 @@ function FloatingElement({ children, className, depth = 0.3 }: FloatingElementPr
 
 export function WorksFloatingCards({ progress }: { progress: number }) {
   const [selectedWork, setSelectedWork] = useState<WorkCard | null>(null);
+  const [cards, setCards] = useState<WorkCard[]>(() => composeCards());
   const enter = easeOut(map(progress, 0.5, 0.64, 0, 1));
   const leave = easeInOut(map(progress, 0.79, 0.92, 0, 1));
   const presence = clamp(enter * (1 - leave));
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    getWordPressWorks(controller.signal)
+      .then((works) => {
+        if (works.length > 0) {
+          setCards(composeCards(works));
+        }
+      })
+      .catch(() => {
+        setCards(composeCards());
+      });
+
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     if (!selectedWork) return undefined;
@@ -297,13 +403,20 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
             <div className="work-detail-copy">
               <p>{selectedWork.category}</p>
               <h2>{selectedWork.title}</h2>
-              <span>Temporary case study frame</span>
-              <div className="work-detail-grid" aria-label="Work detail placeholders">
-                <div>Overview</div>
-                <div>Role</div>
-                <div>Process</div>
-                <div>Outcome</div>
-              </div>
+              {selectedWork.excerpt && <span>{selectedWork.excerpt}</span>}
+              {selectedWork.contentHtml ? (
+                <div
+                  className="work-detail-content"
+                  dangerouslySetInnerHTML={{ __html: selectedWork.contentHtml }}
+                />
+              ) : (
+                <div className="work-detail-grid" aria-label="Work detail placeholders">
+                  <div>Overview</div>
+                  <div>Role</div>
+                  <div>Process</div>
+                  <div>Outcome</div>
+                </div>
+              )}
             </div>
           </article>
         </section>

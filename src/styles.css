@@ -477,6 +477,29 @@ body {
   letter-spacing: 0;
 }
 
+.work-detail-content {
+  max-width: 56ch;
+  max-height: 190px;
+  overflow: auto;
+  color: rgba(241, 238, 231, 0.76);
+  font-size: clamp(13px, 1vw, 16px);
+  line-height: 1.62;
+}
+
+.work-detail-content > * {
+  margin: 0 0 0.75em;
+}
+
+.work-detail-content > *:last-child {
+  margin-bottom: 0;
+}
+
+.work-detail-content a {
+  color: var(--ink);
+  text-decoration-color: rgba(241, 238, 231, 0.38);
+  text-underline-offset: 4px;
+}
+
 .work-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
