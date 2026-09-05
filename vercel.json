@@ -13,7 +13,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!assets/|fonts/|favicon.ico|robots.txt).*)",
+      "source": "/((?!assets/|fonts/|favicon.ico|robots.txt|sitemap.xml).*)",
       "destination": "/index.html"
     }
   ]

@@ -26,7 +26,7 @@ const introFirstHoldDuration = 500;
 const introHoldDuration = 100;
 const introTransitionDurations = [650, 650, 650, 650, 2400];
 
-const aboutText = 'We design identities, interactive systems, and digital experiences with a careful balance of motion, typography, and atmosphere.';
+const aboutText = 'AZ Studio is a creative studio in Norway working across brand identity, interactive web design, motion, and digital experience systems for culture, technology, and ambitious independent brands.';
 
 function clamp(value: number, min = 0, max = 1) {
   return Math.min(Math.max(value, min), max);
@@ -398,16 +398,63 @@ function TopNav({ progress }: { progress: number }) {
   return (
     <nav className="top-nav" aria-label="Primary navigation">
       {navTargets.map((target) => (
-        <button
+        <a
           key={target.id}
+          href={`#${target.id}`}
           className={active === target.id ? 'is-active' : undefined}
-          type="button"
-          onClick={() => smoothScrollToProgress(target.progress)}
+          onClick={(event) => {
+            event.preventDefault();
+            history.replaceState(null, '', `#${target.id}`);
+            smoothScrollToProgress(target.progress);
+          }}
         >
           {target.label}
-        </button>
+        </a>
       ))}
     </nav>
+  );
+}
+
+function scrollToHash() {
+  const target = navTargets.find((item) => `#${item.id}` === window.location.hash);
+
+  if (target) {
+    requestAnimationFrame(() => smoothScrollToProgress(target.progress));
+  }
+}
+
+function SeoCopy() {
+  return (
+    <div className="scroll-copy">
+      <section id="about" className="scroll-copy-section" aria-labelledby="about-heading">
+        <article>
+          <span>About</span>
+          <h1 id="about-heading">AZ Studio designs identities, interactive systems, and digital experiences.</h1>
+          <p>
+            Based in Norway, AZ Studio works with brands, founders, cultural projects, and creative teams that need a sharper visual voice online. The studio combines brand identity, typography, motion direction, and web experience design into focused digital systems.
+          </p>
+        </article>
+      </section>
+      <section id="works" className="scroll-copy-section" aria-labelledby="works-heading">
+        <article>
+          <span>Works</span>
+          <h2 id="works-heading">Selected work across brand identity, motion, editorial systems, and interactive web design.</h2>
+          <p>
+            The work section presents visual studies and CMS powered project entries. Each piece can describe the client context, design role, process, imagery, and outcome, giving visitors and search engines clearer project content over time.
+          </p>
+        </article>
+      </section>
+      <section id="contact" className="scroll-copy-section" aria-labelledby="contact-heading">
+        <article>
+          <span>Contact</span>
+          <h2 id="contact-heading">Work with AZ Studio on brand and digital experience projects.</h2>
+          <p>
+            For identity systems, portfolio websites, visual direction, interactive experiences, and motion led digital communication, contact AZ Studio through the email link on this page.
+          </p>
+        </article>
+      </section>
+      <section className="scroll-copy-section" aria-label="End of homepage" />
+    </div>
   );
 }
 
@@ -421,6 +468,10 @@ function ScrollRail({ progress }: { progress: number }) {
 
 export default function App() {
   const { progress, pointerX, pointerY, elapsed } = useStoryboardMotion();
+
+  useEffect(() => {
+    scrollToHash();
+  }, []);
 
   return (
     <>
@@ -449,12 +500,7 @@ export default function App() {
         <ContactPanel progress={progress} />
       </main>
 
-      <div className="scroll-copy" aria-hidden="true">
-        <section />
-        <section />
-        <section />
-        <section />
-      </div>
+      <SeoCopy />
     </>
   );
 }

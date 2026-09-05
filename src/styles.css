@@ -102,7 +102,7 @@ body {
   line-height: 1;
 }
 
-.top-nav button {
+.top-nav a {
   appearance: none;
   display: inline-flex;
   align-items: center;
@@ -116,6 +116,7 @@ body {
   font: inherit;
   font-weight: 500;
   letter-spacing: 0;
+  text-decoration: none;
   text-transform: lowercase;
   cursor: pointer;
   transition:
@@ -124,8 +125,8 @@ body {
     text-shadow 180ms ease;
 }
 
-.top-nav button:hover,
-.top-nav button.is-active {
+.top-nav a:hover,
+.top-nav a.is-active {
   color: rgba(241, 238, 231, 0.92);
   font-weight: 850;
   text-shadow: 0 0 18px rgba(241, 238, 231, 0.12);
@@ -532,16 +533,53 @@ body {
 
 .scroll-copy {
   position: relative;
-  z-index: 1;
-  width: min(42vw, 540px);
+  z-index: 6;
+  width: min(38vw, 520px);
   margin-left: auto;
   padding-right: clamp(28px, 8vw, 120px);
-  color: transparent;
+  color: rgba(241, 238, 231, 0.7);
   pointer-events: none;
 }
 
-.scroll-copy section {
+.scroll-copy-section {
+  position: relative;
   height: 130vh;
+  display: flex;
+  align-items: center;
+}
+
+.scroll-copy-section article {
+  display: grid;
+  gap: 14px;
+  max-width: 48ch;
+  padding: 0 0 0 8px;
+  opacity: 0.32;
+  filter: blur(0.2px);
+}
+
+.scroll-copy-section span {
+  color: rgba(241, 238, 231, 0.5);
+  font-size: 11px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.scroll-copy-section h1,
+.scroll-copy-section h2 {
+  margin: 0;
+  color: rgba(241, 238, 231, 0.82);
+  font-size: clamp(20px, 2vw, 32px);
+  line-height: 1.04;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+.scroll-copy-section p {
+  margin: 0;
+  color: rgba(241, 238, 231, 0.54);
+  font-size: clamp(12px, 1vw, 15px);
+  line-height: 1.58;
+  font-weight: 500;
 }
 
 @media (max-width: 820px) {
@@ -584,6 +622,22 @@ body {
   .scroll-copy {
     width: 100%;
     padding-right: 0;
+  }
+
+  .scroll-copy-section {
+    align-items: flex-end;
+    padding: 0 22px 110px;
+  }
+
+  .scroll-copy-section article {
+    max-width: 78vw;
+    padding: 0;
+    opacity: 0.2;
+  }
+
+  .scroll-copy-section h1,
+  .scroll-copy-section h2 {
+    font-size: clamp(18px, 5.2vw, 26px);
   }
 
   .work-detail {
