@@ -60,6 +60,12 @@ function unitToPx(value: string) {
   return number || 0;
 }
 
+function getStoryboardMaxScroll() {
+  const spacer = document.querySelector<HTMLElement>('.story-scroll-spacer');
+  const scrollHeight = spacer?.offsetHeight ?? document.documentElement.scrollHeight;
+  return Math.max(scrollHeight - window.innerHeight, 0);
+}
+
 function toMotionValues(item: FloatingItem) {
   const isMobile = window.innerWidth <= 820;
   const end = isMobile && item.mobileEnd ? { ...item.end, ...item.mobileEnd } : item.end;
@@ -112,7 +118,7 @@ function useStoryboardMotion() {
     rafRef.current = null;
 
     const readProgress = () => {
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      const maxScroll = getStoryboardMaxScroll();
       return maxScroll <= 0 ? 0 : clamp(window.scrollY / maxScroll);
     };
 
@@ -372,7 +378,7 @@ function getActiveNav(progress: number) {
 }
 
 function smoothScrollToProgress(targetProgress: number) {
-  const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+  const maxScroll = getStoryboardMaxScroll();
   const startY = window.scrollY;
   const targetY = clamp(targetProgress) * Math.max(maxScroll, 0);
   const distance = targetY - startY;
@@ -423,38 +429,34 @@ function scrollToHash() {
   }
 }
 
-function SeoCopy() {
+function SeoFooter() {
   return (
-    <div className="scroll-copy">
-      <section id="about" className="scroll-copy-section" aria-labelledby="about-heading">
-        <article>
+    <footer className="seo-footer" aria-label="AZ Studio overview">
+      <div className="seo-footer-inner">
+        <section id="about" className="seo-footer-section" aria-labelledby="about-heading">
           <span>About</span>
           <h1 id="about-heading">AZ Studio designs identities, interactive systems, and digital experiences.</h1>
           <p>
             Based in Norway, AZ Studio works with brands, founders, cultural projects, and creative teams that need a sharper visual voice online. The studio combines brand identity, typography, motion direction, and web experience design into focused digital systems.
           </p>
-        </article>
-      </section>
-      <section id="works" className="scroll-copy-section" aria-labelledby="works-heading">
-        <article>
+        </section>
+        <section id="works" className="seo-footer-section" aria-labelledby="works-heading">
           <span>Works</span>
           <h2 id="works-heading">Selected work across brand identity, motion, editorial systems, and interactive web design.</h2>
           <p>
             The work section presents visual studies and CMS powered project entries. Each piece can describe the client context, design role, process, imagery, and outcome, giving visitors and search engines clearer project content over time.
           </p>
-        </article>
-      </section>
-      <section id="contact" className="scroll-copy-section" aria-labelledby="contact-heading">
-        <article>
+        </section>
+        <section id="contact" className="seo-footer-section" aria-labelledby="contact-heading">
           <span>Contact</span>
           <h2 id="contact-heading">Work with AZ Studio on brand and digital experience projects.</h2>
           <p>
             For identity systems, portfolio websites, visual direction, interactive experiences, and motion led digital communication, contact AZ Studio through the email link on this page.
           </p>
-        </article>
-      </section>
-      <section className="scroll-copy-section" aria-label="End of homepage" />
-    </div>
+          <a href="mailto:hello@azstudio.com">hello@azstudio.com</a>
+        </section>
+      </div>
+    </footer>
   );
 }
 
@@ -500,7 +502,8 @@ export default function App() {
         <ContactPanel progress={progress} />
       </main>
 
-      <SeoCopy />
+      <div className="story-scroll-spacer" aria-hidden="true" />
+      <SeoFooter />
     </>
   );
 }
