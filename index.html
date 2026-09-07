@@ -19,6 +19,29 @@
       gtag('config', 'AW-17700578992');
     </script>
     <!-- End Google tag for Google Ads -->
+    <!-- Contentsquare Main Tracking Tag -->
+    <script>
+      (function () {
+        window._uxa = window._uxa || [];
+        if (typeof CS_CONF === "undefined") {
+          window._uxa.push([
+            "setPath",
+            window.location.pathname + window.location.hash.replace("#", "?__")
+          ]);
+          var mt = document.createElement("script");
+          mt.type = "text/javascript";
+          mt.async = true;
+          mt.src = "//t.contentsquare.net/uxa/ec9d9e8fd9339.js";
+          document.getElementsByTagName("head")[0].appendChild(mt);
+        } else {
+          window._uxa.push([
+            "trackPageview",
+            window.location.pathname + window.location.hash.replace("#", "?__")
+          ]);
+        }
+      })();
+    </script>
+    <!-- End Contentsquare Main Tracking Tag -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />

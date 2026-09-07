@@ -63,6 +63,14 @@ function trackGoogleAdsConversion() {
   });
 }
 
+function getContentsquarePath() {
+  return window.location.pathname + window.location.hash.replace('#', '?__');
+}
+
+function trackContentsquarePageview() {
+  window._uxa?.push(['trackPageview', getContentsquarePath()]);
+}
+
 function clamp(value: number, min = 0, max = 1) {
   return Math.min(Math.max(value, min), max);
 }
@@ -362,7 +370,7 @@ function FloatingService({ progress, pointerX, pointerY }: { progress: number; p
     {
       start: { x: '36vw', y: '72vh', rotate: -5 },
       end: { x: '14vw', y: '48vh', rotate: 0 },
-      mobileEnd: { x: '5vw', y: '50vh' },
+      mobileEnd: { x: '3vw', y: '40vh' },
       depth: 1.65,
       enter: [0.48, 0.62],
       leave: [0.8, 0.91],
@@ -371,8 +379,8 @@ function FloatingService({ progress, pointerX, pointerY }: { progress: number; p
     },
     {
       start: { x: '84vw', y: '24vh', rotate: 6 },
-      end: { x: '68vw', y: '19vh', rotate: -2 },
-      mobileEnd: { x: '34vw', y: '18vh' },
+      end: { x: '70vw', y: '10vh', rotate: -2 },
+      mobileEnd: { x: '53vw', y: '14vh' },
       depth: 0.72,
       enter: [0.52, 0.66],
       leave: [0.76, 0.88],
@@ -381,13 +389,13 @@ function FloatingService({ progress, pointerX, pointerY }: { progress: number; p
     },
     {
       start: { x: '6vw', y: '28vh', rotate: 4 },
-      end: { x: '62vw', y: '58vh', rotate: 2 },
-      mobileEnd: { x: '42vw', y: '66vh' },
+      end: { x: '55vw', y: '56vh', rotate: 2 },
+      mobileEnd: { x: '53vw', y: '69vh' },
       depth: 1.28,
       enter: [0.5, 0.69],
       leave: [0.82, 0.94],
       strength: 48,
-      scale: [0.8, 0.18]
+      scale: [0.76, 0.16]
     }
   ], []);
 
@@ -670,6 +678,26 @@ export default function App() {
     const onPopState = () => setIsContactFormOpen(window.location.pathname === '/contact');
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  useEffect(() => {
+    const originalPushState = window.history.pushState;
+    const trackAfterNavigation = () => window.setTimeout(trackContentsquarePageview, 0);
+
+    window.history.pushState = function pushStateWithContentsquare(...args) {
+      const result = originalPushState.apply(this, args);
+      trackAfterNavigation();
+      return result;
+    };
+
+    window.addEventListener('popstate', trackAfterNavigation);
+    window.addEventListener('hashchange', trackAfterNavigation);
+
+    return () => {
+      window.history.pushState = originalPushState;
+      window.removeEventListener('popstate', trackAfterNavigation);
+      window.removeEventListener('hashchange', trackAfterNavigation);
+    };
   }, []);
 
   const openContactForm = () => {
