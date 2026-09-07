@@ -51,6 +51,18 @@ const serviceCards = [
   }
 ];
 
+const googleAdsConversionId = 'AW-17700578992/udXfCOaJs7ObELDNpfhB';
+
+function trackGoogleAdsConversion() {
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = window.gtag || function gtagFallback(...args: unknown[]) {
+    window.dataLayer?.push(args);
+  };
+  window.gtag('event', 'conversion', {
+    send_to: googleAdsConversionId
+  });
+}
+
 function clamp(value: number, min = 0, max = 1) {
   return Math.min(Math.max(value, min), max);
 }
@@ -606,6 +618,7 @@ function ContactFormPage({ onClose }: { onClose: () => void }) {
         action="mailto:hello@azstudio.com"
         method="post"
         encType="text/plain"
+        onSubmit={trackGoogleAdsConversion}
       >
         <div className="contact-form-heading">
           <p>Start a project</p>
