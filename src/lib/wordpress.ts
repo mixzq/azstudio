@@ -1,5 +1,6 @@
 export type WordPressWork = {
   id: string;
+  slug: string;
   title: string;
   category: string;
   excerpt: string;
@@ -96,6 +97,7 @@ export async function getWordPressWorks(signal?: AbortSignal): Promise<WordPress
 
   return posts.map((post) => ({
     id: `wp-${post.id}`,
+    slug: post.slug,
     title: textFromHtml(post.title?.rendered) || post.slug,
     category: categoryFromPost(post),
     excerpt: textFromHtml(post.excerpt?.rendered),

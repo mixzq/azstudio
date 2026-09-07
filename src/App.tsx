@@ -14,6 +14,13 @@ type FloatingItem = {
   depth: number;
 };
 
+type ServiceCardItem = FloatingItem & {
+  enter: [number, number];
+  leave: [number, number];
+  strength: number;
+  scale: [number, number];
+};
+
 type MotionState = {
   progress: number;
   pointerX: number;
@@ -24,9 +31,25 @@ type MotionState = {
 const introTexts = ['Where', 'Brands', 'Find', 'Their', 'Voice', 'azstudio'];
 const introFirstHoldDuration = 500;
 const introHoldDuration = 100;
-const introTransitionDurations = [650, 650, 650, 650, 2400];
+const introTransitionDurations = [455, 455, 455, 455, 1680];
 
-const aboutText = 'AZ Studio is a creative studio in Norway working across brand identity, interactive web design, motion, and digital experience systems for culture, technology, and ambitious independent brands.';
+const serviceCards = [
+  {
+    title: 'Logo Design & Branding',
+    description: 'Build a clear and professional brand that reflects your value, connects with the right audience and makes your business easier to remember.',
+    image: '/PIC/mockup-free-dyWVPeyBvrM-unsplash.jpg'
+  },
+  {
+    title: 'Web Design & Development',
+    description: 'A clear, professional website designed around your brand, customers and business goals, helping people understand, trust and contact you.',
+    image: '/PIC/azwedo-l-lc-nT4WsKUoLo4-unsplash.jpg'
+  },
+  {
+    title: 'Graphic Design Subscription',
+    description: 'Your flexible design team for everyday creative needs, without the time and cost of hiring full time designers.',
+    image: '/PIC/charlesdeluvio-Lks7vei-eAg-unsplash.jpg'
+  }
+];
 
 function clamp(value: number, min = 0, max = 1) {
   return Math.min(Math.max(value, min), max);
@@ -107,6 +130,7 @@ function useStoryboardMotion() {
   const pointerRef = useRef({ targetX: 0, targetY: 0, x: 0, y: 0 });
   const introStartRef = useRef(0);
   const rafRef = useRef<number | null>(null);
+  const autoAdvancedRef = useRef(false);
 
   useEffect(() => {
     if ('scrollRestoration' in window.history) {
@@ -134,8 +158,14 @@ function useStoryboardMotion() {
         elapsed: performance.now() - introStartRef.current
       });
 
+      const elapsed = performance.now() - introStartRef.current;
+      if (!autoAdvancedRef.current && elapsed >= getIntroDuration() + 250 && window.scrollY < 8 && !window.location.pathname.startsWith('/projects/')) {
+        autoAdvancedRef.current = true;
+        smoothScrollToProgress(navTargets[0].progress);
+      }
+
       const needsPointerFrame = Math.abs(pointer.targetX - pointer.x) > 0.001 || Math.abs(pointer.targetY - pointer.y) > 0.001;
-      const needsIntroFrame = performance.now() - introStartRef.current < 6100;
+      const needsIntroFrame = elapsed < getIntroDuration() + 900;
       rafRef.current = needsPointerFrame || needsIntroFrame ? requestAnimationFrame(tick) : null;
     };
 
@@ -176,15 +206,15 @@ function getIntroState(elapsed: number) {
 
   if (elapsed < introFirstHoldDuration) {
     return [
-      { text: introTexts[0], small: false, style: getTextMorphStyle(scrollPresence, 0, true) },
-      { text: '', small: false, style: getTextMorphStyle(0, 0, true) }
+      { text: introTexts[0], small: false, compact: false, style: getTextMorphStyle(scrollPresence, 0, true) },
+      { text: '', small: false, compact: false, style: getTextMorphStyle(0, 0, true) }
     ];
   }
 
   if (elapsed >= introDuration) {
     return [
-      { text: 'azstudio', small: false, style: getTextMorphStyle(scrollPresence, 0, true) },
-      { text: '', small: false, style: getTextMorphStyle(0, 0, true) }
+      { text: 'azstudio', small: false, compact: false, style: getTextMorphStyle(scrollPresence, 0, true) },
+      { text: '', small: false, compact: false, style: getTextMorphStyle(0, 0, true) }
     ];
   }
 
@@ -211,11 +241,13 @@ function getIntroState(elapsed: number) {
     {
       text: introTexts[rawIndex],
       small: false,
+      compact: false,
       style: getTextMorphStyle(currentPresence, 0, true)
     },
     {
       text: introTexts[rawIndex + 1],
       small: false,
+      compact: false,
       style: getTextMorphStyle(nextPresence, 0, true)
     }
   ];
@@ -229,13 +261,14 @@ type TitleFrame = {
   text: string;
   progress: number;
   small: boolean;
+  compact?: boolean;
 };
 
 const titleFrames: TitleFrame[] = [
   { text: 'azstudio', progress: 0.08, small: false },
-  { text: 'About', progress: 1 / 3, small: true },
-  { text: 'works', progress: 2 / 3, small: false },
-  { text: 'get in touch', progress: 0.94, small: true }
+  { text: 'Projects', progress: 1 / 3, small: true },
+  { text: 'service', progress: 2 / 3, small: false },
+  { text: 'where you want to start?', progress: 0.94, small: true, compact: true }
 ];
 
 function getScrollTitleState(progress: number) {
@@ -273,7 +306,11 @@ function GooeyStage({ progress, elapsed }: { progress: number; elapsed: number }
   return (
     <section className="gooey-layer" aria-live="polite">
       {titleState.map((word, index) => (
-        <span key={`title-${index}`} className={`gooey-word${word.small ? ' is-small' : ''}`} style={word.style}>
+        <span
+          key={`title-${index}`}
+          className={`gooey-word${word.small ? ' is-small' : ''}${word.compact ? ' is-compact' : ''}`}
+          style={word.style}
+        >
           {word.text}
         </span>
       ))}
@@ -308,39 +345,79 @@ function getFloatingStyle(
   };
 }
 
-function FloatingAbout({ progress, pointerX, pointerY }: { progress: number; pointerX: number; pointerY: number }) {
-  const item = useMemo(() => ({
-    start: { x: '36vw', y: '72vh', rotate: -5 },
-    end: { x: '10vw', y: '62vh', rotate: 0 },
-    mobileEnd: { x: '7vw', y: '64vh' },
-    depth: 1.45
-  }), []);
-  const aboutCopyEnter = easeOut(map(progress, 0.093, 0.22, 0, 1));
-  const aboutCopyLeave = easeInOut(map(progress, 0.5, 0.573, 0, 1));
-  const presence = clamp(aboutCopyEnter * (1 - aboutCopyLeave));
-  const t = easeOut(aboutCopyEnter);
-  const baseStyle = getFloatingStyle(item, t, pointerX, pointerY, 44, 0.82, 0.18, 34, 0.68);
-  const opacity = Math.pow(presence, 0.48);
-  const blur = 34 * (1 - presence);
+function FloatingService({ progress, pointerX, pointerY }: { progress: number; pointerX: number; pointerY: number }) {
+  const items = useMemo<ServiceCardItem[]>(() => [
+    {
+      start: { x: '36vw', y: '72vh', rotate: -5 },
+      end: { x: '14vw', y: '48vh', rotate: 0 },
+      mobileEnd: { x: '5vw', y: '50vh' },
+      depth: 1.65,
+      enter: [0.48, 0.62],
+      leave: [0.8, 0.91],
+      strength: 62,
+      scale: [0.78, 0.24]
+    },
+    {
+      start: { x: '84vw', y: '24vh', rotate: 6 },
+      end: { x: '68vw', y: '19vh', rotate: -2 },
+      mobileEnd: { x: '34vw', y: '18vh' },
+      depth: 0.72,
+      enter: [0.52, 0.66],
+      leave: [0.76, 0.88],
+      strength: 30,
+      scale: [0.86, 0.1]
+    },
+    {
+      start: { x: '6vw', y: '28vh', rotate: 4 },
+      end: { x: '62vw', y: '58vh', rotate: 2 },
+      mobileEnd: { x: '42vw', y: '66vh' },
+      depth: 1.28,
+      enter: [0.5, 0.69],
+      leave: [0.82, 0.94],
+      strength: 48,
+      scale: [0.8, 0.18]
+    }
+  ], []);
 
   return (
-    <section className="about-floating" aria-label="About AZ Studio">
-      <p
-        className="about-copy"
-        style={{
-          ...baseStyle,
-          opacity,
-          filter: `blur(${blur.toFixed(2)}px)`,
-          transform: baseStyle.transform
-        }}
-      >
-        {aboutText}
-      </p>
+    <section className="about-floating" aria-label="AZ Studio services">
+      {items.map((item, index) => {
+        const cardEnter = easeOut(map(progress, item.enter[0], item.enter[1], 0, 1));
+        const cardLeave = easeInOut(map(progress, item.leave[0], item.leave[1], 0, 1));
+        const cardPresence = clamp(cardEnter * (1 - cardLeave));
+        const t = easeOut(cardEnter);
+        const baseStyle = getFloatingStyle(item, t, pointerX, pointerY, item.strength, item.scale[0], item.scale[1], 38, 0.7);
+        const opacity = Math.pow(cardPresence, 0.52);
+        const blur = 34 * (1 - cardPresence);
+
+        return (
+          <article
+            key={serviceCards[index].title}
+            className={`about-copy service-copy service-copy-${index + 1}`}
+            style={{
+              ...baseStyle,
+              opacity,
+              filter: `blur(${blur.toFixed(2)}px)`,
+              transform: baseStyle.transform,
+              '--service-depth': item.depth
+            } as CSSProperties}
+            aria-label={serviceCards[index].title}
+          >
+            <div className="service-copy-image" aria-hidden="true">
+              <img src={serviceCards[index].image} alt="" />
+            </div>
+            <div className="service-copy-content">
+              <h2>{serviceCards[index].title}</h2>
+              <p>{serviceCards[index].description}</p>
+            </div>
+          </article>
+        );
+      })}
     </section>
   );
 }
 
-function ContactPanel({ progress }: { progress: number }) {
+function ContactPanel({ progress, onOpenForm }: { progress: number; onOpenForm: () => void }) {
   const enter = easeOut(map(progress, 0.78, 0.94, 0, 1));
   const presence = clamp(enter);
 
@@ -353,27 +430,47 @@ function ContactPanel({ progress }: { progress: number }) {
         transform: `translateX(-50%) translateY(${(26 * (1 - presence)).toFixed(2)}px)`
       }}
     >
-      <a href="mailto:hello@azstudio.com">hello@azstudio.com</a>
+      <button className="talk-button talk-button-center" type="button" onClick={onOpenForm}>Let's talk</button>
     </section>
   );
 }
 
+function FloatingTalkButton({ progress, onOpenForm }: { progress: number; onOpenForm: () => void }) {
+  const contactPresence = easeOut(map(progress, 0.78, 0.9, 0, 1));
+  const presence = 1 - contactPresence;
+
+  return (
+    <button
+      className="talk-button talk-button-corner"
+      type="button"
+      onClick={onOpenForm}
+      style={{
+        opacity: presence,
+        '--talk-offset-y': `${(12 * contactPresence).toFixed(2)}px`,
+        pointerEvents: presence > 0.08 ? 'auto' : 'none'
+      } as CSSProperties}
+    >
+      Let's talk
+    </button>
+  );
+}
+
 type NavTarget = {
-  id: 'about' | 'works' | 'contact';
+  id: 'projects' | 'service' | 'contact';
   label: string;
   progress: number;
 };
 
 const navTargets: NavTarget[] = [
-  { id: 'about', label: 'about', progress: 1 / 3 },
-  { id: 'works', label: 'works', progress: 2 / 3 },
+  { id: 'projects', label: 'projects', progress: 1 / 3 },
+  { id: 'service', label: 'service', progress: 2 / 3 },
   { id: 'contact', label: 'contact', progress: 1 }
 ];
 
 function getActiveNav(progress: number) {
   if (progress < 0.2) return null;
-  if (progress < 0.5) return 'about';
-  if (progress < 0.82) return 'works';
+  if (progress < 0.5) return 'projects';
+  if (progress < 0.82) return 'service';
   return 'contact';
 }
 
@@ -421,6 +518,23 @@ function TopNav({ progress }: { progress: number }) {
   );
 }
 
+function BrandMark({ progress, elapsed }: { progress: number; elapsed: number }) {
+  const presence = clamp(map(Math.max(progress, elapsed >= getIntroDuration() ? 0.12 : 0), 0.06, 0.14, 0, 1));
+
+  return (
+    <a
+      className="brand-mark"
+      href="/"
+      style={{
+        opacity: presence,
+        transform: `translateY(${(10 * (1 - presence)).toFixed(2)}px)`
+      }}
+    >
+      azstudio
+    </a>
+  );
+}
+
 function scrollToHash() {
   const target = navTargets.find((item) => `#${item.id}` === window.location.hash);
 
@@ -433,30 +547,93 @@ function SeoFooter() {
   return (
     <footer className="seo-footer" aria-label="AZ Studio overview">
       <div className="seo-footer-inner">
-        <section id="about" className="seo-footer-section" aria-labelledby="about-heading">
-          <span>About</span>
-          <h1 id="about-heading">AZ Studio designs identities, interactive systems, and digital experiences.</h1>
-          <p>
-            Based in Norway, AZ Studio works with brands, founders, cultural projects, and creative teams that need a sharper visual voice online. The studio combines brand identity, typography, motion direction, and web experience design into focused digital systems.
+        <section id="about" className="seo-footer-brand" aria-labelledby="footer-about-heading">
+          <a className="seo-footer-logo" href="/" aria-label="AZ Studio home">azstudio</a>
+          <p id="footer-about-heading">
+            AZ Studio is a Norway based creative studio for brand identity, interactive web design, motion, and digital experience systems.
           </p>
+          <div className="seo-footer-social" aria-label="Social links">
+            <a href="https://www.instagram.com/" aria-label="Instagram">Ig</a>
+            <a href="https://www.behance.net/" aria-label="Behance">Be</a>
+            <a href="https://www.linkedin.com/" aria-label="LinkedIn">In</a>
+          </div>
         </section>
-        <section id="works" className="seo-footer-section" aria-labelledby="works-heading">
-          <span>Works</span>
-          <h2 id="works-heading">Selected work across brand identity, motion, editorial systems, and interactive web design.</h2>
-          <p>
-            The work section presents visual studies and CMS powered project entries. Each piece can describe the client context, design role, process, imagery, and outcome, giving visitors and search engines clearer project content over time.
-          </p>
-        </section>
-        <section id="contact" className="seo-footer-section" aria-labelledby="contact-heading">
-          <span>Contact</span>
-          <h2 id="contact-heading">Work with AZ Studio on brand and digital experience projects.</h2>
-          <p>
-            For identity systems, portfolio websites, visual direction, interactive experiences, and motion led digital communication, contact AZ Studio through the email link on this page.
-          </p>
-          <a href="mailto:hello@azstudio.com">hello@azstudio.com</a>
-        </section>
+
+        <nav className="seo-footer-nav" aria-label="Footer navigation">
+          <section className="seo-footer-section" aria-labelledby="footer-studio-heading">
+            <h2 id="footer-studio-heading">Studio</h2>
+            <a href="#projects">Projects</a>
+            <a href="#service">Service</a>
+            <a href="#contact">Contact</a>
+            <a href="/admin">Admin</a>
+          </section>
+          <section className="seo-footer-section" aria-labelledby="footer-services-heading">
+            <h2 id="footer-services-heading">Services</h2>
+            <a href="#service">Brand identity</a>
+            <a href="#service">Web design</a>
+            <a href="#service">Motion direction</a>
+            <a href="#service">Digital systems</a>
+          </section>
+          <section className="seo-footer-section" aria-labelledby="footer-contact-heading">
+            <h2 id="footer-contact-heading">Contact</h2>
+            <a href="mailto:hello@azstudio.com">Email</a>
+            <a href="/contact">Start a project</a>
+            <a href="https://azstudio.no/">azstudio.no</a>
+            <a href="/sitemap.xml">Sitemap</a>
+          </section>
+        </nav>
+      </div>
+
+      <div className="seo-footer-bottom">
+        <p>© 2026 AZ Studio. All rights reserved.</p>
+        <div>
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms</a>
+        </div>
       </div>
     </footer>
+  );
+}
+
+function ContactFormPage({ onClose }: { onClose: () => void }) {
+  return (
+    <section className="contact-form-page" aria-label="Contact form">
+      <button className="work-detail-close" type="button" onClick={onClose}>
+        Back
+      </button>
+      <form
+        className="contact-form-shell"
+        action="mailto:hello@azstudio.com"
+        method="post"
+        encType="text/plain"
+      >
+        <div className="contact-form-heading">
+          <p>Start a project</p>
+          <h1>where you want to start?</h1>
+        </div>
+        <div className="contact-form-fields">
+          <label>
+            Name
+            <input name="name" type="text" autoComplete="name" required />
+          </label>
+          <label>
+            Email
+            <input name="email" type="email" autoComplete="email" required />
+          </label>
+          <label className="contact-form-wide">
+            Project
+            <input name="project" type="text" placeholder="Logo design,website building, or just image resizing?" />
+          </label>
+          <label className="contact-form-wide">
+            Message
+            <textarea name="message" rows={5} required />
+          </label>
+        </div>
+        <button className="talk-button contact-form-submit" type="submit">
+          Send message
+        </button>
+      </form>
+    </section>
   );
 }
 
@@ -470,10 +647,27 @@ function ScrollRail({ progress }: { progress: number }) {
 
 export default function App() {
   const { progress, pointerX, pointerY, elapsed } = useStoryboardMotion();
+  const [isContactFormOpen, setIsContactFormOpen] = useState(() => window.location.pathname === '/contact');
 
   useEffect(() => {
     scrollToHash();
   }, []);
+
+  useEffect(() => {
+    const onPopState = () => setIsContactFormOpen(window.location.pathname === '/contact');
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  const openContactForm = () => {
+    history.pushState(null, '', '/contact');
+    setIsContactFormOpen(true);
+  };
+
+  const closeContactForm = () => {
+    history.pushState(null, '', '/');
+    setIsContactFormOpen(false);
+  };
 
   return (
     <>
@@ -494,14 +688,17 @@ export default function App() {
 
       <main className="site-stage" aria-label="AZ Studio homepage storyboard">
         <div className="grain" />
+        <BrandMark progress={progress} elapsed={elapsed} />
         <TopNav progress={progress} />
         <ScrollRail progress={progress} />
+        <FloatingTalkButton progress={progress} onOpenForm={openContactForm} />
         <WorksFloatingCards progress={progress} />
-        <FloatingAbout progress={progress} pointerX={pointerX} pointerY={pointerY} />
+        <FloatingService progress={progress} pointerX={pointerX} pointerY={pointerY} />
         <GooeyStage progress={progress} elapsed={elapsed} />
-        <ContactPanel progress={progress} />
+        <ContactPanel progress={progress} onOpenForm={openContactForm} />
       </main>
 
+      {isContactFormOpen && <ContactFormPage onClose={closeContactForm} />}
       <div className="story-scroll-spacer" aria-hidden="true" />
       <SeoFooter />
     </>

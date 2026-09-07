@@ -39,6 +39,7 @@ type FloatingElementProps = {
 
 type WorkCard = {
   id: string;
+  slug: string;
   depth: number;
   x: number;
   y: number;
@@ -142,6 +143,7 @@ const workSlots: WorkSlot[] = [
 const fallbackWorks: Array<Omit<WorkCard, keyof WorkSlot>> = [
   {
     id: 'identity',
+    slug: 'identity-study',
     title: 'Identity Study',
     category: 'Brand System',
     excerpt: 'A compact identity direction prepared as the first local work sample.',
@@ -149,6 +151,7 @@ const fallbackWorks: Array<Omit<WorkCard, keyof WorkSlot>> = [
   },
   {
     id: 'system',
+    slug: 'interface-rhythm',
     title: 'Interface Rhythm',
     category: 'Digital Product',
     excerpt: 'A product interface study for spacing, motion, and visual hierarchy.',
@@ -156,6 +159,7 @@ const fallbackWorks: Array<Omit<WorkCard, keyof WorkSlot>> = [
   },
   {
     id: 'campaign',
+    slug: 'campaign-frame',
     title: 'Campaign Frame',
     category: 'Creative Direction',
     excerpt: 'A campaign frame exploring image, typography, and composition.',
@@ -163,6 +167,7 @@ const fallbackWorks: Array<Omit<WorkCard, keyof WorkSlot>> = [
   },
   {
     id: 'editorial',
+    slug: 'editorial-motion',
     title: 'Editorial Motion',
     category: 'Visual Story',
     excerpt: 'A visual story sample built around editorial rhythm and motion.',
@@ -181,7 +186,8 @@ function composeCards(cmsWorks: WordPressWork[] = []): WorkCard[] {
       ...slot,
       ...work,
       image: cmsWork?.image ?? slot.image,
-      id: cmsWork?.id ?? work.id
+      id: cmsWork?.id ?? work.id,
+      slug: cmsWork?.slug ?? work.slug
     };
   });
 }
@@ -318,11 +324,14 @@ function FloatingElement({ children, className, depth = 0.3 }: FloatingElementPr
 }
 
 export function WorksFloatingCards({ progress }: { progress: number }) {
-  const [selectedWork, setSelectedWork] = useState<WorkCard | null>(null);
+  const [activeSlug, setActiveSlug] = useState(() => getProjectSlugFromPath());
   const [cards, setCards] = useState<WorkCard[]>(() => composeCards());
-  const enter = easeOut(map(progress, 0.5, 0.64, 0, 1));
-  const leave = easeInOut(map(progress, 0.79, 0.92, 0, 1));
+  const previousLocationRef = useRef<string | null>(null);
+  const previousScrollYRef = useRef<number | null>(null);
+  const enter = easeOut(map(progress, 0.16, 0.3, 0, 1));
+  const leave = easeInOut(map(progress, 0.46, 0.58, 0, 1));
   const presence = clamp(enter * (1 - leave));
+  const activeWork = cards.find((card) => card.slug === activeSlug) ?? null;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -341,17 +350,59 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
   }, []);
 
   useEffect(() => {
-    if (!selectedWork) return undefined;
+    const onPopState = () => setActiveSlug(getProjectSlugFromPath());
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setSelectedWork(null);
-      }
+  useEffect(() => {
+    if (!activeWork) return;
+
+    document.title = `${activeWork.title} | AZ Studio`;
+
+    const description = activeWork.excerpt || `${activeWork.title} project detail by AZ Studio.`;
+    const metaDescription = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    const ogTitle = document.querySelector<HTMLMetaElement>('meta[property="og:title"]');
+    const ogDescription = document.querySelector<HTMLMetaElement>('meta[property="og:description"]');
+
+    metaDescription?.setAttribute('content', description);
+    canonical?.setAttribute('href', window.location.href);
+    ogTitle?.setAttribute('content', `${activeWork.title} | AZ Studio`);
+    ogDescription?.setAttribute('content', description);
+
+    return () => {
+      document.title = 'AZ Studio | Brand Identity and Digital Experience Studio in Norway';
+      metaDescription?.setAttribute(
+        'content',
+        'AZ Studio is a Norway based creative studio for brand identity, interactive web design, motion, and digital experience systems.'
+      );
+      canonical?.setAttribute('href', 'https://azstudio.no/');
+      ogTitle?.setAttribute('content', 'AZ Studio');
+      ogDescription?.setAttribute(
+        'content',
+        'Brand identity, interactive web design, motion, and digital experience systems from AZ Studio in Norway.'
+      );
     };
+  }, [activeWork]);
 
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selectedWork]);
+  const openProject = (card: WorkCard) => {
+    previousLocationRef.current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    previousScrollYRef.current = window.scrollY;
+    history.pushState(null, '', `/projects/${card.slug}`);
+    setActiveSlug(card.slug);
+  };
+
+  const closeProject = () => {
+    const restoreLocation = previousLocationRef.current ?? '/#projects';
+    const restoreScrollY = previousScrollYRef.current ?? getProjectSectionScrollY();
+
+    history.pushState(null, '', restoreLocation);
+    setActiveSlug(null);
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: restoreScrollY, behavior: 'auto' });
+    });
+  };
 
   return (
     <>
@@ -371,7 +422,7 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
             <button
               className={`works-card works-card-${card.tone}`}
               type="button"
-              onClick={() => setSelectedWork(card)}
+              onClick={() => openProject(card)}
               style={{
                 '--work-card-x': `${card.x}%`,
                 '--work-card-y': `${card.y}%`,
@@ -390,24 +441,23 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
         ))}
       </FloatingLayer>
 
-      {selectedWork && (
-        <section className="work-detail" aria-modal="true" role="dialog" aria-label={`${selectedWork.title} detail`}>
-          <button className="work-detail-backdrop" type="button" aria-label="Close work detail" onClick={() => setSelectedWork(null)} />
+      {activeWork && (
+        <section className="work-detail-page" aria-label={`${activeWork.title} project detail`}>
           <article className="work-detail-panel">
-            <button className="work-detail-close" type="button" onClick={() => setSelectedWork(null)}>
-              Close
+            <button className="work-detail-close" type="button" onClick={closeProject}>
+              Back
             </button>
             <div className="work-detail-image">
-              <img src={selectedWork.image} alt="" />
+              <img src={activeWork.image} alt="" />
             </div>
             <div className="work-detail-copy">
-              <p>{selectedWork.category}</p>
-              <h2>{selectedWork.title}</h2>
-              {selectedWork.excerpt && <span>{selectedWork.excerpt}</span>}
-              {selectedWork.contentHtml ? (
+              <p>{activeWork.category}</p>
+              <h2>{activeWork.title}</h2>
+              {activeWork.excerpt && <span>{activeWork.excerpt}</span>}
+              {activeWork.contentHtml ? (
                 <div
                   className="work-detail-content"
-                  dangerouslySetInnerHTML={{ __html: selectedWork.contentHtml }}
+                  dangerouslySetInnerHTML={{ __html: activeWork.contentHtml }}
                 />
               ) : (
                 <div className="work-detail-grid" aria-label="Work detail placeholders">
@@ -423,4 +473,17 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
       )}
     </>
   );
+}
+
+function getProjectSlugFromPath() {
+  if (typeof window === 'undefined') return null;
+  const match = window.location.pathname.match(/^\/projects\/([^/]+)\/?$/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function getProjectSectionScrollY() {
+  const spacer = document.querySelector<HTMLElement>('.story-scroll-spacer');
+  const scrollHeight = spacer?.offsetHeight ?? document.documentElement.scrollHeight;
+  const maxScroll = Math.max(scrollHeight - window.innerHeight, 0);
+  return maxScroll / 3;
 }
