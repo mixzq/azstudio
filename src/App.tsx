@@ -1,5 +1,7 @@
-import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
-import { WorksFloatingCards } from '@/components/WorksFloatingCards';
+import { CSSProperties, ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { WorkCard, WorksFloatingCards, composeProjectCards } from '@/components/WorksFloatingCards';
+import { SeoFooter } from '@/components/SeoFooter';
+import { getWordPressWorks } from '@/lib/wordpress';
 
 type Point = {
   x: string;
@@ -50,6 +52,81 @@ const serviceCards = [
     image: '/PIC/charlesdeluvio-Lks7vei-eAg-unsplash.jpg'
   }
 ];
+
+const serviceDetailImages = [
+  '/PIC/branding.png',
+  '/PIC/web development.png',
+  '/PIC/subscribe.png'
+];
+
+const serviceDetails = [
+  {
+    title: 'Logo Design & Branding',
+    headline: '建立专业、清晰、容易被记住的品牌形象',
+    summary: 'We build brand foundations that make your business easier to understand, trust and remember.',
+    details: 'Suitable for businesses with real customers that are ready to look more professional, launch a new brand or sharpen an existing identity. We clarify your value, audience, positioning and visual direction, then shape the logo, colors, typography and practical brand materials into one usable system.',
+    audience: '适合已经开始有客户，准备提升专业度、扩大业务或者推出新品牌的企业。',
+    intro: '我们会先与你一起梳理：',
+    discovery: [
+      '你的品牌提供什么价值。',
+      '你的目标客户是谁。',
+      '客户为什么选择你。',
+      '你的品牌应该给人什么感觉。',
+      '你与竞争者有什么不同。'
+    ],
+    deliverableIntro: '在此基础上，我们可以完成：',
+    deliverables: [
+      'Logo 设计或现有 Logo 升级。',
+      '品牌颜色和字体。',
+      '品牌视觉方向。',
+      '简洁实用的品牌指南。',
+      '名片、社交媒体模板、演示文稿、包装等品牌材料。'
+    ],
+    outcome: '最终得到的不只是一个 Logo，而是一套能够帮助客户理解你、信任你和记住你的品牌基础。'
+  },
+  {
+    title: 'Web Design & Development',
+    headline: '清楚介绍你的业务，让客户更容易了解和信任你',
+    summary: 'We design and build clear websites that help people understand what you do and take the next step.',
+    details: 'For small businesses, personal brands and service pages, we plan the structure, refine the content, design the interface and build a responsive website with essential SEO, testing and launch support.',
+    audience: '我们为小型企业和个人品牌设计简洁、专业、容易使用的网站。',
+    intro: '在设计之前，我们会先了解你的业务目标、品牌价值和目标客户，再规划适合的网站内容与结构。',
+    discovery: [],
+    deliverableIntro: '服务包括：',
+    deliverables: [
+      '网站结构与内容规划。',
+      '基础文案整理。',
+      'UI UX 设计。',
+      '手机和平板适配。',
+      '网站开发。',
+      '联系表单等基础功能。',
+      '基础 SEO 设置。',
+      '网站测试与上线。'
+    ],
+    outcome: '适合制作品牌官网、企业介绍网站、个人作品集和服务落地页。'
+  },
+  {
+    title: 'Graphic Design Subscription',
+    headline: '不需要招聘全职设计师，也能拥有稳定的设计支持',
+    summary: 'We become a flexible design team for everyday creative needs, campaigns and brand updates.',
+    details: 'Designed for small companies that need ongoing visual support without hiring full time. We handle social content, ads, posters, menus, presentations, website graphics, packaging and campaign visuals through a prioritized task list.',
+    audience: '适合持续有设计需求，但暂时不需要招聘平面设计师、网页设计师或品牌人员的小型企业。',
+    intro: '我们会先熟悉你的品牌、目标客户和营销计划，再持续处理日常设计需求，例如：',
+    discovery: [],
+    deliverableIntro: '',
+    deliverables: [
+      '社交媒体内容和广告图片。',
+      '宣传单、海报、菜单和价目表。',
+      '公司介绍、产品目录和演示文稿。',
+      '网站横幅、活动页面和内容更新。',
+      '包装、标签和品牌材料。',
+      '新产品或营销活动的视觉设计。'
+    ],
+    outcome: '你可以把不同需求放进同一个任务清单，我们会按照优先级和约定的服务时间逐项完成。随着合作深入，我们会越来越了解你的品牌。你不需要每次重新寻找设计师，也不用反复解释品牌应该是什么样子。'
+  }
+];
+
+const projectManifestoText = 'Design for clear brands, useful websites, and visual systems people remember.';
 
 const googleAdsConversionId = 'AW-17700578992/udXfCOaJs7ObELDNpfhB';
 
@@ -140,7 +217,7 @@ function getTextMorphStyle(presence: number, scaleLift = 0, linear = false): CSS
   } as CSSProperties;
 }
 
-function useStoryboardMotion() {
+function useStoryboardMotion(isActive = true) {
   const [motion, setMotion] = useState<MotionState>({
     progress: 0,
     pointerX: 0,
@@ -153,6 +230,16 @@ function useStoryboardMotion() {
   const autoAdvancedRef = useRef(false);
 
   useEffect(() => {
+    if (!isActive) {
+      setMotion({
+        progress: 0,
+        pointerX: 0,
+        pointerY: 0,
+        elapsed: 0
+      });
+      return undefined;
+    }
+
     if ('scrollRestoration' in window.history) {
       window.history.scrollRestoration = 'manual';
     }
@@ -181,7 +268,7 @@ function useStoryboardMotion() {
       const elapsed = performance.now() - introStartRef.current;
       if (!autoAdvancedRef.current && elapsed >= getIntroDuration() + 250 && window.scrollY < 8 && !window.location.pathname.startsWith('/projects/')) {
         autoAdvancedRef.current = true;
-        smoothScrollToProgress(navTargets[0].progress);
+        smoothScrollToProgress(1 / 3);
       }
 
       const needsPointerFrame = Math.abs(pointer.targetX - pointer.x) > 0.001 || Math.abs(pointer.targetY - pointer.y) > 0.001;
@@ -214,9 +301,52 @@ function useStoryboardMotion() {
         rafRef.current = null;
       }
     };
-  }, []);
+  }, [isActive]);
 
   return motion;
+}
+
+function useGridHoverLight() {
+  useEffect(() => {
+    const root = document.documentElement;
+    let raf: number | null = null;
+    let x = window.innerWidth / 2;
+    let y = window.innerHeight / 2;
+
+    const update = () => {
+      root.style.setProperty('--grid-hover-x', `${x}px`);
+      root.style.setProperty('--grid-hover-y', `${y}px`);
+      root.style.setProperty('--grid-hover-opacity', '1');
+      raf = null;
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      x = event.clientX;
+      y = event.clientY;
+      if (!raf) {
+        raf = window.requestAnimationFrame(update);
+      }
+    };
+
+    const onPointerLeave = () => {
+      root.style.setProperty('--grid-hover-opacity', '0');
+    };
+
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    document.addEventListener('pointerleave', onPointerLeave);
+
+    root.style.setProperty('--grid-hover-x', `${x}px`);
+    root.style.setProperty('--grid-hover-y', `${y}px`);
+    root.style.setProperty('--grid-hover-opacity', '0');
+
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerleave', onPointerLeave);
+      if (raf) {
+        window.cancelAnimationFrame(raf);
+      }
+    };
+  }, []);
 }
 
 function getIntroState(elapsed: number) {
@@ -286,8 +416,8 @@ type TitleFrame = {
 
 const titleFrames: TitleFrame[] = [
   { text: 'azstudio', progress: 0.08, small: false },
-  { text: 'Projects', progress: 1 / 3, small: true },
-  { text: 'service', progress: 2 / 3, small: false },
+  { text: 'service', progress: 1 / 3, small: false },
+  { text: 'Projects', progress: 2 / 3, small: true },
   { text: 'where you want to start?', progress: 0.94, small: true, compact: true }
 ];
 
@@ -368,32 +498,32 @@ function getFloatingStyle(
 function FloatingService({ progress, pointerX, pointerY }: { progress: number; pointerX: number; pointerY: number }) {
   const items = useMemo<ServiceCardItem[]>(() => [
     {
-      start: { x: '36vw', y: '72vh', rotate: -5 },
+      start: { x: '36vw', y: '72vh', rotate: 0 },
       end: { x: '14vw', y: '48vh', rotate: 0 },
       mobileEnd: { x: '3vw', y: '40vh' },
       depth: 1.65,
-      enter: [0.48, 0.62],
-      leave: [0.8, 0.91],
+      enter: [0.16, 0.3],
+      leave: [0.46, 0.58],
       strength: 62,
       scale: [0.78, 0.24]
     },
     {
-      start: { x: '84vw', y: '24vh', rotate: 6 },
-      end: { x: '70vw', y: '10vh', rotate: -2 },
+      start: { x: '84vw', y: '24vh', rotate: 0 },
+      end: { x: '70vw', y: '10vh', rotate: 0 },
       mobileEnd: { x: '53vw', y: '14vh' },
       depth: 0.72,
-      enter: [0.52, 0.66],
-      leave: [0.76, 0.88],
+      enter: [0.2, 0.34],
+      leave: [0.44, 0.56],
       strength: 30,
       scale: [0.86, 0.1]
     },
     {
-      start: { x: '6vw', y: '28vh', rotate: 4 },
-      end: { x: '55vw', y: '56vh', rotate: 2 },
+      start: { x: '6vw', y: '28vh', rotate: 0 },
+      end: { x: '55vw', y: '56vh', rotate: 0 },
       mobileEnd: { x: '53vw', y: '69vh' },
       depth: 1.28,
-      enter: [0.5, 0.69],
-      leave: [0.82, 0.94],
+      enter: [0.18, 0.37],
+      leave: [0.48, 0.6],
       strength: 48,
       scale: [0.76, 0.16]
     }
@@ -409,6 +539,7 @@ function FloatingService({ progress, pointerX, pointerY }: { progress: number; p
         const baseStyle = getFloatingStyle(item, t, pointerX, pointerY, item.strength, item.scale[0], item.scale[1], 38, 0.7);
         const opacity = Math.pow(cardPresence, 0.52);
         const blur = 34 * (1 - cardPresence);
+        const isVisible = cardPresence > 0.01;
 
         return (
           <article
@@ -419,8 +550,10 @@ function FloatingService({ progress, pointerX, pointerY }: { progress: number; p
               opacity,
               filter: `blur(${blur.toFixed(2)}px)`,
               transform: baseStyle.transform,
+              visibility: isVisible ? 'visible' : 'hidden',
               '--service-depth': item.depth
             } as CSSProperties}
+            aria-hidden={!isVisible}
             aria-label={serviceCards[index].title}
           >
             <div className="service-copy-image" aria-hidden="true">
@@ -440,6 +573,8 @@ function FloatingService({ progress, pointerX, pointerY }: { progress: number; p
 function ContactPanel({ progress, onOpenForm }: { progress: number; onOpenForm: () => void }) {
   const enter = easeOut(map(progress, 0.78, 0.94, 0, 1));
   const presence = clamp(enter);
+  const isVisible = presence > 0.01;
+  const isInteractive = presence > 0.12;
 
   return (
     <section
@@ -447,10 +582,21 @@ function ContactPanel({ progress, onOpenForm }: { progress: number; onOpenForm: 
       style={{
         opacity: presence,
         filter: `blur(${(18 * (1 - presence)).toFixed(2)}px)`,
-        transform: `translateX(-50%) translateY(${(26 * (1 - presence)).toFixed(2)}px)`
+        transform: `translateX(-50%) translateY(${(26 * (1 - presence)).toFixed(2)}px)`,
+        visibility: isVisible ? 'visible' : 'hidden',
+        pointerEvents: isInteractive ? 'auto' : 'none'
       }}
+      aria-hidden={!isVisible}
     >
-      <button className="talk-button talk-button-center" type="button" onClick={onOpenForm}>Let's talk</button>
+      <button
+        className="talk-button talk-button-center"
+        type="button"
+        onClick={onOpenForm}
+        disabled={!isInteractive}
+        tabIndex={isInteractive ? 0 : -1}
+      >
+        Let's talk
+      </button>
     </section>
   );
 }
@@ -458,16 +604,22 @@ function ContactPanel({ progress, onOpenForm }: { progress: number; onOpenForm: 
 function FloatingTalkButton({ progress, onOpenForm }: { progress: number; onOpenForm: () => void }) {
   const contactPresence = easeOut(map(progress, 0.78, 0.9, 0, 1));
   const presence = 1 - contactPresence;
+  const isVisible = presence > 0.01;
+  const isInteractive = presence > 0.12;
 
   return (
     <button
       className="talk-button talk-button-corner"
       type="button"
       onClick={onOpenForm}
+      disabled={!isInteractive}
+      tabIndex={isInteractive ? 0 : -1}
+      aria-hidden={!isVisible}
       style={{
         opacity: presence,
         '--talk-offset-y': `${(12 * contactPresence).toFixed(2)}px`,
-        pointerEvents: presence > 0.08 ? 'auto' : 'none'
+        visibility: isVisible ? 'visible' : 'hidden',
+        pointerEvents: isInteractive ? 'auto' : 'none'
       } as CSSProperties}
     >
       Let's talk
@@ -478,19 +630,19 @@ function FloatingTalkButton({ progress, onOpenForm }: { progress: number; onOpen
 type NavTarget = {
   id: 'projects' | 'service' | 'contact';
   label: string;
-  progress: number;
+  href: string;
 };
 
 const navTargets: NavTarget[] = [
-  { id: 'projects', label: 'projects', progress: 1 / 3 },
-  { id: 'service', label: 'service', progress: 2 / 3 },
-  { id: 'contact', label: 'contact', progress: 1 }
+  { id: 'projects', label: 'projects', href: '/projects' },
+  { id: 'service', label: 'service', href: '/service' },
+  { id: 'contact', label: 'contact', href: '/contact' }
 ];
 
 function getActiveNav(progress: number) {
   if (progress < 0.2) return null;
-  if (progress < 0.5) return 'projects';
-  if (progress < 0.82) return 'service';
+  if (progress < 0.5) return 'service';
+  if (progress < 0.82) return 'projects';
   return 'contact';
 }
 
@@ -523,13 +675,8 @@ function TopNav({ progress }: { progress: number }) {
       {navTargets.map((target) => (
         <a
           key={target.id}
-          href={`#${target.id}`}
+          href={target.href}
           className={active === target.id ? 'is-active' : undefined}
-          onClick={(event) => {
-            event.preventDefault();
-            history.replaceState(null, '', `#${target.id}`);
-            smoothScrollToProgress(target.progress);
-          }}
         >
           {target.label}
         </a>
@@ -540,14 +687,20 @@ function TopNav({ progress }: { progress: number }) {
 
 function BrandMark({ progress, elapsed }: { progress: number; elapsed: number }) {
   const presence = clamp(map(Math.max(progress, elapsed >= getIntroDuration() ? 0.12 : 0), 0.06, 0.14, 0, 1));
+  const isVisible = presence > 0.01;
+  const isInteractive = presence > 0.12;
 
   return (
     <a
       className="brand-mark"
       href="/"
+      tabIndex={isInteractive ? 0 : -1}
+      aria-hidden={!isVisible}
       style={{
         opacity: presence,
-        transform: `translateY(${(10 * (1 - presence)).toFixed(2)}px)`
+        transform: `translateY(${(10 * (1 - presence)).toFixed(2)}px)`,
+        visibility: isVisible ? 'visible' : 'hidden',
+        pointerEvents: isInteractive ? 'auto' : 'none'
       }}
     >
       azstudio
@@ -556,62 +709,117 @@ function BrandMark({ progress, elapsed }: { progress: number; elapsed: number })
 }
 
 function scrollToHash() {
-  const target = navTargets.find((item) => `#${item.id}` === window.location.hash);
+  const hashTargets = [
+    { id: 'service', progress: 1 / 3 },
+    { id: 'projects', progress: 2 / 3 },
+    { id: 'contact', progress: 1 }
+  ];
+  const target = hashTargets.find((item) => `#${item.id}` === window.location.hash);
 
   if (target) {
     requestAnimationFrame(() => smoothScrollToProgress(target.progress));
   }
 }
 
-function SeoFooter() {
+function StandardPageNav() {
   return (
-    <footer className="seo-footer" aria-label="AZ Studio overview">
-      <div className="seo-footer-inner">
-        <section id="about" className="seo-footer-brand" aria-labelledby="footer-about-heading">
-          <a className="seo-footer-logo" href="/" aria-label="AZ Studio home">azstudio</a>
-          <p id="footer-about-heading">
-            AZ Studio is a Norway based creative studio for brand identity, interactive web design, motion, and digital experience systems.
-          </p>
-          <div className="seo-footer-social" aria-label="Social links">
-            <a href="https://www.instagram.com/" aria-label="Instagram">Ig</a>
-            <a href="https://www.behance.net/" aria-label="Behance">Be</a>
-            <a href="https://www.linkedin.com/" aria-label="LinkedIn">In</a>
-          </div>
-        </section>
-
-        <nav className="seo-footer-nav" aria-label="Footer navigation">
-          <section className="seo-footer-section" aria-labelledby="footer-studio-heading">
-            <h2 id="footer-studio-heading">Studio</h2>
-            <a href="#projects">Projects</a>
-            <a href="#service">Service</a>
-            <a href="#contact">Contact</a>
-            <a href="/admin">Admin</a>
-          </section>
-          <section className="seo-footer-section" aria-labelledby="footer-services-heading">
-            <h2 id="footer-services-heading">Services</h2>
-            <a href="#service">Brand identity</a>
-            <a href="#service">Web design</a>
-            <a href="#service">Motion direction</a>
-            <a href="#service">Digital systems</a>
-          </section>
-          <section className="seo-footer-section" aria-labelledby="footer-contact-heading">
-            <h2 id="footer-contact-heading">Contact</h2>
-            <a href="mailto:hello@azstudio.com">Email</a>
-            <a href="/contact">Start a project</a>
-            <a href="https://azstudio.no/">azstudio.no</a>
-            <a href="/sitemap.xml">Sitemap</a>
-          </section>
-        </nav>
+    <nav className="page-nav" aria-label="Primary navigation">
+      <a className="page-nav-brand" href="/">azstudio</a>
+      <div className="page-nav-links">
+        {navTargets.map((target) => (
+          <a key={target.id} href={target.href}>
+            {target.label}
+          </a>
+        ))}
       </div>
+    </nav>
+  );
+}
 
-      <div className="seo-footer-bottom">
-        <p>© 2026 AZ Studio. All rights reserved.</p>
-        <div>
-          <a href="/privacy">Privacy Policy</a>
-          <a href="/terms">Terms</a>
+function RoutePageShell({ children, label }: { children: ReactNode; label: string }) {
+  return (
+    <>
+      <main className="route-page" aria-label={label}>
+        <div className="grain" />
+        <StandardPageNav />
+        {children}
+      </main>
+      <SeoFooter />
+    </>
+  );
+}
+
+function ProjectsPage() {
+  const [projects, setProjects] = useState<WorkCard[]>(() => composeProjectCards());
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    getWordPressWorks(controller.signal)
+      .then((works) => {
+        if (works.length > 0) {
+          setProjects(composeProjectCards(works));
+        }
+      })
+      .catch(() => {
+        setProjects(composeProjectCards());
+      });
+
+    return () => controller.abort();
+  }, []);
+
+  return (
+    <RoutePageShell label="AZ Studio projects">
+      <section className="projects-index" aria-labelledby="projects-index-heading">
+        <div className="projects-index-hero">
+          <h1>{projectManifestoText}</h1>
         </div>
-      </div>
-    </footer>
+        <p id="projects-index-heading" className="projects-index-label">Selected work</p>
+        <div className="projects-index-grid">
+          {projects.map((project) => (
+            <a key={project.slug} className="projects-index-card" href={`/projects/${project.slug}`}>
+              <img src={project.image} alt="" loading="lazy" />
+              <span>
+                <small>{project.category}</small>
+                <strong>{project.title}</strong>
+                <em>{project.excerpt}</em>
+              </span>
+            </a>
+          ))}
+        </div>
+      </section>
+    </RoutePageShell>
+  );
+}
+
+function ServicePage() {
+  return (
+    <RoutePageShell label="AZ Studio service">
+      <section className="service-index" aria-labelledby="service-index-heading">
+        <div className="service-index-heading">
+          <p id="service-index-heading">What we do</p>
+          <h1>Clear design systems for brands that need to be understood, trusted and remembered.</h1>
+        </div>
+        <div className="service-detail-list">
+          {serviceDetails.map((service, index) => (
+            <article key={service.title} className="service-detail-row">
+              <div className="service-detail-copy">
+                <div className="service-detail-meta">
+                  <p>{service.title}</p>
+                </div>
+                <h2>{service.summary}</h2>
+                <div className="service-detail-body">
+                  <p>{service.details}</p>
+                </div>
+              </div>
+              <div className="service-detail-media-slot" aria-hidden="true">
+                <img src={serviceDetailImages[index]} alt="" loading="lazy" />
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    </RoutePageShell>
   );
 }
 
@@ -623,7 +831,7 @@ function ContactFormPage({ onClose }: { onClose: () => void }) {
       </button>
       <form
         className="contact-form-shell"
-        action="mailto:hello@azstudio.com"
+        action="mailto:mixzq@outlook.com"
         method="post"
         encType="text/plain"
         onSubmit={trackGoogleAdsConversion}
@@ -667,15 +875,18 @@ function ScrollRail({ progress }: { progress: number }) {
 }
 
 export default function App() {
-  const { progress, pointerX, pointerY, elapsed } = useStoryboardMotion();
-  const [isContactFormOpen, setIsContactFormOpen] = useState(() => window.location.pathname === '/contact');
+  const [routePath, setRoutePath] = useState(() => window.location.pathname);
+  const { progress, pointerX, pointerY, elapsed } = useStoryboardMotion(routePath === '/' || routePath === '/contact');
+  const isContactFormOpen = routePath === '/contact';
+
+  useGridHoverLight();
 
   useEffect(() => {
     scrollToHash();
   }, []);
 
   useEffect(() => {
-    const onPopState = () => setIsContactFormOpen(window.location.pathname === '/contact');
+    const onPopState = () => setRoutePath(window.location.pathname);
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
@@ -686,6 +897,7 @@ export default function App() {
 
     window.history.pushState = function pushStateWithContentsquare(...args) {
       const result = originalPushState.apply(this, args);
+      setRoutePath(window.location.pathname);
       trackAfterNavigation();
       return result;
     };
@@ -702,13 +914,21 @@ export default function App() {
 
   const openContactForm = () => {
     history.pushState(null, '', '/contact');
-    setIsContactFormOpen(true);
+    setRoutePath('/contact');
   };
 
   const closeContactForm = () => {
     history.pushState(null, '', '/');
-    setIsContactFormOpen(false);
+    setRoutePath('/');
   };
+
+  if (routePath === '/projects') {
+    return <ProjectsPage />;
+  }
+
+  if (routePath === '/service') {
+    return <ServicePage />;
+  }
 
   return (
     <>

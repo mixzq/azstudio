@@ -9,6 +9,7 @@ import {
   useRef,
   useState
 } from 'react';
+import { SeoFooter } from '@/components/SeoFooter';
 import { WordPressWork, getWordPressWorks } from '../lib/wordpress';
 
 type FloatingContextType = {
@@ -29,6 +30,7 @@ type FloatingLayerProps = {
   easingFactor?: number;
   maxShift?: number;
   style?: CSSProperties;
+  'aria-hidden'?: boolean;
 };
 
 type FloatingElementProps = {
@@ -37,7 +39,7 @@ type FloatingElementProps = {
   depth?: number;
 };
 
-type WorkCard = {
+export type WorkCard = {
   id: string;
   slug: string;
   depth: number;
@@ -51,6 +53,20 @@ type WorkCard = {
   excerpt: string;
   contentHtml: string;
   sourceUrl?: string;
+};
+
+type ProjectDetailData = {
+  eyebrow: string;
+  title: string;
+  summary: string;
+  heroImage: string;
+  heroBackground: string;
+  logoImages: string[];
+  contentImage: string;
+  sections: Array<{
+    label: string;
+    body: string;
+  }>;
 };
 
 type WorkSlot = Pick<WorkCard, 'depth' | 'x' | 'y' | 'width' | 'tone' | 'image'>;
@@ -142,11 +158,11 @@ const workSlots: WorkSlot[] = [
 
 const fallbackWorks: Array<Omit<WorkCard, keyof WorkSlot>> = [
   {
-    id: 'identity',
-    slug: 'identity-study',
-    title: 'Identity Study',
-    category: 'Brand System',
-    excerpt: 'A compact identity direction prepared as the first local work sample.',
+    id: 'fotland',
+    slug: 'fotland-bryggeri',
+    title: 'Fotland Bryggeri',
+    category: 'Logo Design & Branding',
+    excerpt: 'A quiet identity system for a small family brewery in Oslo.',
     contentHtml: ''
   },
   {
@@ -175,12 +191,52 @@ const fallbackWorks: Array<Omit<WorkCard, keyof WorkSlot>> = [
   }
 ];
 
+const projectDetails: Record<string, ProjectDetailData> = {
+  'fotland-bryggeri': {
+    eyebrow: 'Logo Design & Branding',
+    title: 'Fotland Bryggeri',
+    summary: 'A simple, honest logo direction for a family run brewery built around local ingredients, close community, and the house at the center of the brand.',
+    heroImage: '/PIC/fotland_bryggeri/logo.svg',
+    heroBackground: '/PIC/fotland_bryggeri/top_part_background.png',
+    logoImages: [
+      '/PIC/fotland_bryggeri/logo.svg'
+    ],
+    contentImage: '/PIC/fotland_bryggeri/content-pic.png',
+    sections: [
+      {
+        label: 'About brand',
+        body: 'Fotland Bryggeri is a small family run brewery with its main audience made up of close family and friends. Most ingredients are locally sourced from Oslo, where the brewery is located.'
+      },
+      {
+        label: 'Goals',
+        body: 'The client for Fotland Bryggeri\'s logo requested a design that is simple and unpretentious, reflecting the authenticity of the brand. They specifically wanted the brewery house to be incorporated into the logo, highlighting its importance as a central element of their identity.'
+      }
+    ]
+  }
+};
+
+function getWorkSlot(index: number): WorkSlot {
+  const slot = workSlots[index % workSlots.length];
+  if (index < workSlots.length) return slot;
+
+  const cycle = Math.floor(index / workSlots.length);
+  const x = (slot.x + cycle * 11) % 92;
+  const y = (slot.y + cycle * 17) % 84;
+
+  return {
+    ...slot,
+    x: Math.max(6, x),
+    y: Math.max(10, y),
+    depth: slot.depth + (cycle % 3) * 0.08
+  };
+}
+
 function composeCards(cmsWorks: WordPressWork[] = []): WorkCard[] {
-  const works = cmsWorks.length > 0 ? cmsWorks.slice(0, workSlots.length) : fallbackWorks;
+  const works = cmsWorks.length > 0 ? cmsWorks : fallbackWorks;
 
   return works.map((work, index) => {
     const cmsWork = cmsWorks[index];
-    const slot = workSlots[index];
+    const slot = getWorkSlot(index);
 
     return {
       ...slot,
@@ -190,6 +246,67 @@ function composeCards(cmsWorks: WordPressWork[] = []): WorkCard[] {
       slug: cmsWork?.slug ?? work.slug
     };
   });
+}
+
+export function composeProjectCards(cmsWorks: WordPressWork[] = []) {
+  return composeCards(cmsWorks);
+}
+
+function getProjectDetail(work: WorkCard): ProjectDetailData | null {
+  if (projectDetails[work.slug]) return projectDetails[work.slug];
+
+  if (work.title.toLowerCase().includes('fotland')) {
+    return projectDetails['fotland-bryggeri'];
+  }
+
+  return null;
+}
+
+function getWorkDescription(work: WorkCard) {
+  const detail = getProjectDetail(work);
+  return detail?.summary || work.excerpt || `${work.title} project detail by AZ Studio.`;
+}
+
+function createWorkFromDetail(slug: string): WorkCard | null {
+  const detail = projectDetails[slug];
+  if (!detail) return null;
+
+  return {
+    ...workSlots[0],
+    id: slug,
+    slug,
+    title: detail.title,
+    category: detail.eyebrow,
+    image: detail.heroImage,
+    excerpt: detail.summary,
+    contentHtml: ''
+  };
+}
+
+function MoreProjects({ projects, currentSlug }: { projects: WorkCard[]; currentSlug: string }) {
+  const relatedProjects = projects.filter((project) => project.slug !== currentSlug).slice(0, 3);
+
+  if (relatedProjects.length === 0) return null;
+
+  return (
+    <section className="project-more" aria-labelledby="project-more-heading">
+      <div className="project-more-header">
+        <p>Selected work</p>
+        <h2 id="project-more-heading">other projects</h2>
+      </div>
+      <div className="project-more-grid">
+        {relatedProjects.map((project) => (
+          <a key={project.slug} className="project-more-card" href={`/projects/${project.slug}`}>
+            <img src={project.image} alt="" loading="lazy" />
+            <span>
+              <small>{project.category}</small>
+              <strong>{project.title}</strong>
+            </span>
+          </a>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 function joinClass(...classes: Array<string | undefined>) {
@@ -221,7 +338,8 @@ function FloatingLayer({
   sensitivity = 0.55,
   easingFactor = 0.06,
   maxShift = 36,
-  style
+  style,
+  'aria-hidden': ariaHidden
 }: FloatingLayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pointerRef = useRef({ x: 0, y: 0 });
@@ -297,7 +415,7 @@ function FloatingLayer({
 
   return (
     <FloatingContext.Provider value={contextValue}>
-      <div ref={containerRef} className={joinClass('works-floating-layer', className)} style={style}>
+      <div ref={containerRef} className={joinClass('works-floating-layer', className)} style={style} aria-hidden={ariaHidden}>
         {children}
       </div>
     </FloatingContext.Provider>
@@ -328,10 +446,13 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
   const [cards, setCards] = useState<WorkCard[]>(() => composeCards());
   const previousLocationRef = useRef<string | null>(null);
   const previousScrollYRef = useRef<number | null>(null);
-  const enter = easeOut(map(progress, 0.16, 0.3, 0, 1));
-  const leave = easeInOut(map(progress, 0.46, 0.58, 0, 1));
+  const enter = easeOut(map(progress, 0.48, 0.62, 0, 1));
+  const leave = easeInOut(map(progress, 0.76, 0.88, 0, 1));
   const presence = clamp(enter * (1 - leave));
-  const activeWork = cards.find((card) => card.slug === activeSlug) ?? null;
+  const isVisible = presence > 0.01;
+  const isInteractive = presence > 0.12;
+  const activeWork = cards.find((card) => card.slug === activeSlug) ?? (activeSlug ? createWorkFromDetail(activeSlug) : null);
+  const activeDetail = activeWork ? getProjectDetail(activeWork) : null;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -360,7 +481,7 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
 
     document.title = `${activeWork.title} | AZ Studio`;
 
-    const description = activeWork.excerpt || `${activeWork.title} project detail by AZ Studio.`;
+    const description = getWorkDescription(activeWork);
     const metaDescription = document.querySelector<HTMLMetaElement>('meta[name="description"]');
     const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     const ogTitle = document.querySelector<HTMLMetaElement>('meta[property="og:title"]');
@@ -394,7 +515,7 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
   };
 
   const closeProject = () => {
-    const restoreLocation = previousLocationRef.current ?? '/#projects';
+    const restoreLocation = previousLocationRef.current ?? '/projects';
     const restoreScrollY = previousScrollYRef.current ?? getProjectSectionScrollY();
 
     history.pushState(null, '', restoreLocation);
@@ -414,8 +535,10 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
         style={{
           opacity: Math.pow(presence, 0.72),
           filter: `blur(${(18 * (1 - presence)).toFixed(2)}px)`,
-          pointerEvents: presence > 0.03 ? 'auto' : 'none'
+          visibility: isVisible ? 'visible' : 'hidden',
+          pointerEvents: isInteractive ? 'auto' : 'none'
         }}
+        aria-hidden={!isVisible}
       >
         {cards.map((card) => (
           <FloatingElement key={card.id} depth={card.depth} className="works-card-position">
@@ -423,6 +546,8 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
               className={`works-card works-card-${card.tone}`}
               type="button"
               onClick={() => openProject(card)}
+              disabled={!isInteractive}
+              tabIndex={isInteractive ? 0 : -1}
               style={{
                 '--work-card-x': `${card.x}%`,
                 '--work-card-y': `${card.y}%`,
@@ -443,31 +568,73 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
 
       {activeWork && (
         <section className="work-detail-page" aria-label={`${activeWork.title} project detail`}>
-          <article className="work-detail-panel">
+          <article className={`work-detail-panel${activeDetail ? ' work-detail-panel-case' : ''}`}>
             <button className="work-detail-close" type="button" onClick={closeProject}>
               Back
             </button>
-            <div className="work-detail-image">
-              <img src={activeWork.image} alt="" />
-            </div>
-            <div className="work-detail-copy">
-              <p>{activeWork.category}</p>
-              <h2>{activeWork.title}</h2>
-              {activeWork.excerpt && <span>{activeWork.excerpt}</span>}
-              {activeWork.contentHtml ? (
-                <div
-                  className="work-detail-content"
-                  dangerouslySetInnerHTML={{ __html: activeWork.contentHtml }}
-                />
-              ) : (
-                <div className="work-detail-grid" aria-label="Work detail placeholders">
-                  <div>Overview</div>
-                  <div>Role</div>
-                  <div>Process</div>
-                  <div>Outcome</div>
+            {activeDetail ? (
+              <>
+                <nav className="project-sticky-nav" aria-label="Project navigation">
+                  <a className="project-sticky-brand" href="/">
+                    azstudio
+                  </a>
+                  <div className="project-sticky-links">
+                    <a href="/projects">projects</a>
+                    <a href="/service">service</a>
+                    <a href="/contact">contact</a>
+                  </div>
+                </nav>
+                <header id="fotland-overview" className="project-case-hero">
+                  <figure className="project-case-media">
+                    <img className="project-case-background" src={activeDetail.heroBackground} alt="" />
+                  </figure>
+                  <h1 className="project-case-title">{activeDetail.title}</h1>
+                  <div className="project-case-logo-stage" aria-label="Fotland Bryggeri logo direction">
+                    {activeDetail.logoImages.map((image, index) => (
+                      <img key={image} className={`project-case-logo project-case-logo-${index + 1}`} src={image} alt="" />
+                    ))}
+                  </div>
+                  <section className="project-case-story" aria-label="Project story">
+                    {activeDetail.sections.map((section) => (
+                      <div key={section.label} className="project-case-text-card">
+                        <p>{section.label}</p>
+                        <span>{section.body}</span>
+                      </div>
+                    ))}
+                  </section>
+                </header>
+
+                <section id="fotland-presentation" className="project-case-full-image" aria-label="Project presentation">
+                  <img src={activeDetail.contentImage} alt="" />
+                </section>
+                <MoreProjects projects={cards} currentSlug={activeWork.slug} />
+                <SeoFooter />
+              </>
+            ) : (
+              <>
+                <div className="work-detail-image">
+                  <img src={activeWork.image} alt="" />
                 </div>
-              )}
-            </div>
+                <div className="work-detail-copy">
+                  <p>{activeWork.category}</p>
+                  <h2>{activeWork.title}</h2>
+                  {activeWork.excerpt && <span>{activeWork.excerpt}</span>}
+                  {activeWork.contentHtml ? (
+                    <div
+                      className="work-detail-content"
+                      dangerouslySetInnerHTML={{ __html: activeWork.contentHtml }}
+                    />
+                  ) : (
+                    <div className="work-detail-grid" aria-label="Work detail placeholders">
+                      <div>Overview</div>
+                      <div>Role</div>
+                      <div>Process</div>
+                      <div>Outcome</div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </article>
         </section>
       )}

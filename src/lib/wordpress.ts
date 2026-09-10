@@ -76,7 +76,7 @@ function categoryFromPost(post: WordPressPost) {
 
 export async function getWordPressWorks(signal?: AbortSignal): Promise<WordPressWork[]> {
   const url = new URL(`${WORDPRESS_API_BASE}/posts`);
-  url.searchParams.set('per_page', '10');
+  url.searchParams.set('per_page', '100');
   url.searchParams.set('orderby', 'date');
   url.searchParams.set('order', 'desc');
   url.searchParams.set('_embed', 'wp:featuredmedia,wp:term');
