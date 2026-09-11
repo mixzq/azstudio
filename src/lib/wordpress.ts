@@ -230,6 +230,7 @@ async function getWordPressPosts(endpoint: 'projects' | 'posts', signal?: AbortS
   url.searchParams.set('orderby', 'date');
   url.searchParams.set('order', 'desc');
   url.searchParams.set('_embed', 'wp:featuredmedia,wp:term');
+  url.searchParams.set('acf_format', 'standard');
   url.searchParams.set('_cacheBust', Date.now().toString());
 
   const response = await fetch(url, {
