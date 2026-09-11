@@ -36,6 +36,13 @@ type WordPressCategory = {
   slug: string;
 };
 
+type WordPressMedia = {
+  source_url?: string;
+  media_details?: {
+    sizes?: Record<string, { source_url?: string }>;
+  };
+};
+
 type WordPressPost = {
   id: number;
   slug: string;
@@ -76,6 +83,7 @@ type WordPressPost = {
 };
 
 type WordPressImageField =
+  | number
   | string
   | {
       url?: string;
@@ -140,22 +148,75 @@ function textFromHtml(value?: string) {
   return decodeHtml(template.content.textContent?.replace(/\s+/g, ' ').trim() ?? '');
 }
 
-function imageFromPost(post: WordPressPost) {
-  const media = post._embedded?.['wp:featuredmedia']?.[0];
-  const image =
+function imageFromMedia(media?: WordPressMedia) {
+  return (
     media?.media_details?.sizes?.large?.source_url ??
     media?.media_details?.sizes?.medium_large?.source_url ??
     media?.media_details?.sizes?.medium?.source_url ??
-    media?.source_url ??
-    post.jetpack_featured_media_url;
+    media?.source_url
+  );
+}
+
+function imageFromPost(post: WordPressPost) {
+  const image = imageFromMedia(post._embedded?.['wp:featuredmedia']?.[0]) ?? post.jetpack_featured_media_url;
 
   return image || undefined;
 }
 
 function imageFromField(image?: WordPressImageField) {
-  if (typeof image === 'string') return image || undefined;
+  if (typeof image === 'number') return undefined;
+  if (typeof image === 'string') {
+    const value = image.trim();
+    return /^\d+$/.test(value) ? undefined : value || undefined;
+  }
 
   return image?.sizes?.large ?? image?.sizes?.medium_large ?? image?.url ?? image?.source_url;
+}
+
+function mediaIdFromField(image?: WordPressImageField) {
+  if (typeof image === 'number') return Number.isInteger(image) && image > 0 ? image : undefined;
+  if (typeof image !== 'string' || !/^\d+$/.test(image.trim())) return undefined;
+
+  const id = Number(image);
+  return Number.isInteger(id) && id > 0 ? id : undefined;
+}
+
+async function fetchMediaImage(url: string, signal?: AbortSignal) {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'application/json'
+      },
+      signal
+    });
+
+    if (!response.ok) return undefined;
+    return imageFromMedia((await response.json()) as WordPressMedia);
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    return undefined;
+  }
+}
+
+function resolveImageField(
+  image: WordPressImageField | undefined,
+  post: WordPressPost,
+  mediaCache: Map<string, Promise<string | undefined>>,
+  signal?: AbortSignal
+) {
+  const directImage = imageFromField(image);
+  if (directImage) return Promise.resolve(directImage);
+
+  const mediaId = mediaIdFromField(image);
+  if (!mediaId || !post.link) return Promise.resolve(undefined);
+
+  const mediaUrl = new URL(`/wp-json/wp/v2/media/${mediaId}`, post.link).toString();
+  const cachedRequest = mediaCache.get(mediaUrl);
+  if (cachedRequest) return cachedRequest;
+
+  const request = fetchMediaImage(mediaUrl, signal);
+  mediaCache.set(mediaUrl, request);
+  return request;
 }
 
 function categoryFromPost(post: WordPressPost) {
@@ -185,11 +246,21 @@ async function getWordPressPosts(endpoint: 'projects' | 'posts', signal?: AbortS
   return (await response.json()) as WordPressPost[];
 }
 
-function mapWordPressWork(post: WordPressPost): WordPressWork {
+async function mapWordPressWork(
+  post: WordPressPost,
+  mediaCache: Map<string, Promise<string | undefined>>,
+  signal?: AbortSignal
+): Promise<WordPressWork> {
   const acf = post.acf;
   const excerpt = textFromHtml(acf?.card_summary) || textFromHtml(post.excerpt?.rendered);
-  const image = imageFromField(acf?.card_image) ?? imageFromPost(post);
   const order = Number(acf?.display_order);
+  const [cardImage, heroBackground, heroLogo, socialImage] = await Promise.all([
+    resolveImageField(acf?.card_image, post, mediaCache, signal),
+    resolveImageField(acf?.hero_background, post, mediaCache, signal),
+    resolveImageField(acf?.hero_logo, post, mediaCache, signal),
+    resolveImageField(acf?.social_image, post, mediaCache, signal)
+  ]);
+  const image = cardImage ?? imageFromPost(post);
 
   return {
     id: `wp-${post.id}`,
@@ -204,11 +275,11 @@ function mapWordPressWork(post: WordPressPost): WordPressWork {
     displayOrder: Number.isFinite(order) ? order : 100,
     seoTitle: textFromHtml(acf?.seo_title) || undefined,
     seoDescription: textFromHtml(acf?.seo_description) || undefined,
-    socialImage: imageFromField(acf?.social_image),
+    socialImage,
     projectDetail: acf
       ? {
-          heroBackground: imageFromField(acf.hero_background) ?? image,
-          heroLogo: imageFromField(acf.hero_logo),
+          heroBackground: heroBackground ?? image,
+          heroLogo,
           heroSummary: textFromHtml(acf.hero_summary) || excerpt,
           client: textFromHtml(acf.client) || undefined,
           year: textFromHtml(acf.year) || undefined,
@@ -231,7 +302,8 @@ export async function getWordPressWorks(signal?: AbortSignal): Promise<WordPress
     posts = await getWordPressPosts('posts', signal);
   }
 
-  const works = posts.map(mapWordPressWork);
+  const mediaCache = new Map<string, Promise<string | undefined>>();
+  const works = await Promise.all(posts.map((post) => mapWordPressWork(post, mediaCache, signal)));
   const worksWithPreview = import.meta.env.DEV
     ? [...works.filter((work) => work.slug !== LOCAL_PREVIEW_WORK.slug), LOCAL_PREVIEW_WORK]
     : works;
