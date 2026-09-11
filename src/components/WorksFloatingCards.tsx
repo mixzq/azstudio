@@ -53,6 +53,12 @@ export type WorkCard = {
   excerpt: string;
   contentHtml: string;
   sourceUrl?: string;
+  showOnHome?: boolean;
+  displayOrder?: number;
+  seoTitle?: string;
+  seoDescription?: string;
+  socialImage?: string;
+  projectDetail?: WordPressWork['projectDetail'];
 };
 
 type ProjectDetailData = {
@@ -61,15 +67,18 @@ type ProjectDetailData = {
   summary: string;
   heroImage: string;
   heroBackground: string;
+  heroBackgroundSrcSet?: string;
   logoImages: string[];
-  contentImage: string;
+  contentImage?: string;
+  contentHtml?: string;
   sections: Array<{
     label: string;
-    body: string;
+    body?: string;
+    bodyHtml?: string;
   }>;
 };
 
-type WorkSlot = Pick<WorkCard, 'depth' | 'x' | 'y' | 'width' | 'tone' | 'image'>;
+type WorkSlot = Pick<WorkCard, 'depth' | 'x' | 'y' | 'width' | 'tone'>;
 
 const FloatingContext = createContext<FloatingContextType | null>(null);
 
@@ -79,115 +88,70 @@ const workSlots: WorkSlot[] = [
     x: 13,
     y: 20,
     width: 'clamp(120px, 13vw, 200px)',
-    tone: 'warm',
-    image: '/PIC/Frame 146.png'
+    tone: 'warm'
   },
   {
     depth: 1.16,
     x: 36,
     y: 12,
     width: 'clamp(180px, 19.5vw, 300px)',
-    tone: 'blue',
-    image: '/PIC/Frame 147.png'
+    tone: 'blue'
   },
   {
     depth: 0.88,
     x: 58,
     y: 68,
     width: 'clamp(144px, 15.6vw, 240px)',
-    tone: 'olive',
-    image: '/PIC/Frame 148.png'
+    tone: 'olive'
   },
   {
     depth: 1.36,
     x: 83,
     y: 24,
     width: 'clamp(156px, 16.9vw, 260px)',
-    tone: 'rose',
-    image: '/PIC/Frame 149.png'
+    tone: 'rose'
   },
   {
     depth: 0.74,
     x: 21,
     y: 61,
     width: 'clamp(132px, 14.3vw, 220px)',
-    tone: 'charcoal',
-    image: '/PIC/Frame 146.png'
+    tone: 'charcoal'
   },
   {
     depth: 1.04,
     x: 46,
     y: 39,
     width: 'clamp(168px, 18.2vw, 280px)',
-    tone: 'gold',
-    image: '/PIC/Frame 147.png'
+    tone: 'gold'
   },
   {
     depth: 0.68,
     x: 72,
     y: 48,
     width: 'clamp(120px, 13vw, 200px)',
-    tone: 'paper',
-    image: '/PIC/Frame 148.png'
+    tone: 'paper'
   },
   {
     depth: 1.24,
     x: 91,
     y: 72,
     width: 'clamp(180px, 19.5vw, 300px)',
-    tone: 'warm',
-    image: '/PIC/Frame 149.png'
+    tone: 'warm'
   },
   {
     depth: 0.96,
     x: 8,
     y: 78,
     width: 'clamp(144px, 15.6vw, 240px)',
-    tone: 'blue',
-    image: '/PIC/Frame 146.png'
+    tone: 'blue'
   },
   {
     depth: 1.42,
     x: 64,
     y: 18,
     width: 'clamp(156px, 16.9vw, 260px)',
-    tone: 'olive',
-    image: '/PIC/Frame 147.png'
-  }
-];
-
-const fallbackWorks: Array<Omit<WorkCard, keyof WorkSlot>> = [
-  {
-    id: 'fotland',
-    slug: 'fotland-bryggeri',
-    title: 'Fotland Bryggeri',
-    category: 'Logo Design & Branding',
-    excerpt: 'A quiet identity system for a small family brewery in Oslo.',
-    contentHtml: ''
-  },
-  {
-    id: 'system',
-    slug: 'interface-rhythm',
-    title: 'Interface Rhythm',
-    category: 'Digital Product',
-    excerpt: 'A product interface study for spacing, motion, and visual hierarchy.',
-    contentHtml: ''
-  },
-  {
-    id: 'campaign',
-    slug: 'campaign-frame',
-    title: 'Campaign Frame',
-    category: 'Creative Direction',
-    excerpt: 'A campaign frame exploring image, typography, and composition.',
-    contentHtml: ''
-  },
-  {
-    id: 'editorial',
-    slug: 'editorial-motion',
-    title: 'Editorial Motion',
-    category: 'Visual Story',
-    excerpt: 'A visual story sample built around editorial rhythm and motion.',
-    contentHtml: ''
+    tone: 'olive'
   }
 ];
 
@@ -231,20 +195,17 @@ function getWorkSlot(index: number): WorkSlot {
   };
 }
 
-function composeCards(cmsWorks: WordPressWork[] = []): WorkCard[] {
-  const works = cmsWorks.length > 0 ? cmsWorks : fallbackWorks;
+function composeCards(cmsWorks: WordPressWork[]): WorkCard[] {
+  return cmsWorks.flatMap((work, index) => {
+    if (!work.image) return [];
 
-  return works.map((work, index) => {
-    const cmsWork = cmsWorks[index];
     const slot = getWorkSlot(index);
 
-    return {
+    return [{
       ...slot,
       ...work,
-      image: cmsWork?.image ?? slot.image,
-      id: cmsWork?.id ?? work.id,
-      slug: cmsWork?.slug ?? work.slug
-    };
+      image: work.image
+    }];
   });
 }
 
@@ -259,12 +220,36 @@ function getProjectDetail(work: WorkCard): ProjectDetailData | null {
     return projectDetails['fotland-bryggeri'];
   }
 
+  if (work.projectDetail) {
+    const detail = work.projectDetail;
+    const sections = [
+      detail.aboutBrandHtml
+        ? { label: 'About brand', bodyHtml: detail.aboutBrandHtml }
+        : { label: 'Overview', body: detail.heroSummary },
+      detail.projectGoalsHtml
+        ? { label: 'Goals', bodyHtml: detail.projectGoalsHtml }
+        : undefined
+    ].filter((section): section is NonNullable<typeof section> => Boolean(section));
+
+    return {
+      eyebrow: work.category,
+      title: work.title,
+      summary: detail.heroSummary || work.excerpt,
+      heroImage: detail.heroLogo || work.image,
+      heroBackground: detail.heroBackground || work.image,
+      heroBackgroundSrcSet: detail.heroBackgroundSrcSet,
+      logoImages: [detail.heroLogo || work.image],
+      contentHtml: work.contentHtml,
+      sections
+    };
+  }
+
   return null;
 }
 
 function getWorkDescription(work: WorkCard) {
   const detail = getProjectDetail(work);
-  return detail?.summary || work.excerpt || `${work.title} project detail by AZ Studio.`;
+  return work.seoDescription || detail?.summary || work.excerpt || `${work.title} project detail by AZ Studio.`;
 }
 
 function createWorkFromDetail(slug: string): WorkCard | null {
@@ -361,34 +346,11 @@ function FloatingLayer({
     const container = containerRef.current;
     if (!container) return undefined;
 
-    const handlePointerMove = (event: PointerEvent) => {
-      const rect = container.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-
-      pointerRef.current = {
-        x: (event.clientX - centerX) / (rect.width / 2),
-        y: (event.clientY - centerY) / (rect.height / 2)
-      };
-    };
-
-    const handlePointerLeave = () => {
-      pointerRef.current = { x: 0, y: 0 };
-    };
-
-    container.addEventListener('pointermove', handlePointerMove);
-    container.addEventListener('pointerleave', handlePointerLeave);
-
-    return () => {
-      container.removeEventListener('pointermove', handlePointerMove);
-      container.removeEventListener('pointerleave', handlePointerLeave);
-    };
-  }, []);
-
-  useEffect(() => {
-    let frameId = 0;
+    let frameId: number | null = null;
 
     const tick = () => {
+      let needsAnotherFrame = false;
+
       elementsMap.current.forEach((data) => {
         const strength = data.depth * sensitivity;
         const targetX = -pointerRef.current.x * maxShift * strength;
@@ -399,13 +361,48 @@ function FloatingLayer({
         data.currentPosition.x += dx * easingFactor;
         data.currentPosition.y += dy * easingFactor;
         data.element.style.transform = `translate3d(${data.currentPosition.x}px, ${data.currentPosition.y}px, 0)`;
+
+        if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) {
+          needsAnotherFrame = true;
+        }
       });
 
-      frameId = requestAnimationFrame(tick);
+      frameId = needsAnotherFrame ? requestAnimationFrame(tick) : null;
     };
 
-    frameId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frameId);
+    const requestTick = () => {
+      if (frameId === null) {
+        frameId = requestAnimationFrame(tick);
+      }
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const rect = container.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      pointerRef.current = {
+        x: (event.clientX - centerX) / (rect.width / 2),
+        y: (event.clientY - centerY) / (rect.height / 2)
+      };
+      requestTick();
+    };
+
+    const handlePointerLeave = () => {
+      pointerRef.current = { x: 0, y: 0 };
+      requestTick();
+    };
+
+    container.addEventListener('pointermove', handlePointerMove);
+    container.addEventListener('pointerleave', handlePointerLeave);
+
+    return () => {
+      container.removeEventListener('pointermove', handlePointerMove);
+      container.removeEventListener('pointerleave', handlePointerLeave);
+      if (frameId !== null) {
+        cancelAnimationFrame(frameId);
+      }
+    };
   }, [easingFactor, maxShift, sensitivity]);
 
   const contextValue = useMemo(
@@ -442,15 +439,14 @@ function FloatingElement({ children, className, depth = 0.3 }: FloatingElementPr
 }
 
 export function WorksFloatingCards({ progress }: { progress: number }) {
-  const [activeSlug, setActiveSlug] = useState(() => getProjectSlugFromPath());
-  const [cards, setCards] = useState<WorkCard[]>(() => composeCards());
-  const previousLocationRef = useRef<string | null>(null);
-  const previousScrollYRef = useRef<number | null>(null);
+  const activeSlug = getProjectSlugFromPath();
+  const [cards, setCards] = useState<WorkCard[]>([]);
   const enter = easeOut(map(progress, 0.48, 0.62, 0, 1));
   const leave = easeInOut(map(progress, 0.76, 0.88, 0, 1));
   const presence = clamp(enter * (1 - leave));
   const isVisible = presence > 0.01;
   const isInteractive = presence > 0.12;
+  const homeCards = cards.filter((card) => card.showOnHome !== false);
   const activeWork = cards.find((card) => card.slug === activeSlug) ?? (activeSlug ? createWorkFromDetail(activeSlug) : null);
   const activeDetail = activeWork ? getProjectDetail(activeWork) : null;
 
@@ -464,33 +460,31 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
         }
       })
       .catch(() => {
-        setCards(composeCards());
+        setCards([]);
       });
 
     return () => controller.abort();
   }, []);
 
   useEffect(() => {
-    const onPopState = () => setActiveSlug(getProjectSlugFromPath());
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
-
-  useEffect(() => {
     if (!activeWork) return;
 
-    document.title = `${activeWork.title} | AZ Studio`;
+    document.title = activeWork.seoTitle || `${activeWork.title} | AZ Studio`;
 
     const description = getWorkDescription(activeWork);
     const metaDescription = document.querySelector<HTMLMetaElement>('meta[name="description"]');
     const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     const ogTitle = document.querySelector<HTMLMetaElement>('meta[property="og:title"]');
     const ogDescription = document.querySelector<HTMLMetaElement>('meta[property="og:description"]');
+    const ogImage = document.querySelector<HTMLMetaElement>('meta[property="og:image"]');
 
     metaDescription?.setAttribute('content', description);
     canonical?.setAttribute('href', window.location.href);
-    ogTitle?.setAttribute('content', `${activeWork.title} | AZ Studio`);
+    ogTitle?.setAttribute('content', activeWork.seoTitle || `${activeWork.title} | AZ Studio`);
     ogDescription?.setAttribute('content', description);
+    if (activeWork.socialImage) {
+      ogImage?.setAttribute('content', activeWork.socialImage);
+    }
 
     return () => {
       document.title = 'AZ Studio | Brand Identity and Digital Experience Studio in Norway';
@@ -508,63 +502,55 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
   }, [activeWork]);
 
   const openProject = (card: WorkCard) => {
-    previousLocationRef.current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    previousScrollYRef.current = window.scrollY;
     history.pushState(null, '', `/projects/${card.slug}`);
-    setActiveSlug(card.slug);
   };
 
   const closeProject = () => {
-    const restoreLocation = previousLocationRef.current ?? '/projects';
-    const restoreScrollY = previousScrollYRef.current ?? getProjectSectionScrollY();
-
-    history.pushState(null, '', restoreLocation);
-    setActiveSlug(null);
-    requestAnimationFrame(() => {
-      window.scrollTo({ top: restoreScrollY, behavior: 'auto' });
-    });
+    history.pushState(null, '', '/projects');
   };
 
   return (
     <>
-      <FloatingLayer
-        className="works-board"
-        sensitivity={0.85}
-        easingFactor={0.06}
-        maxShift={112}
-        style={{
-          opacity: Math.pow(presence, 0.72),
-          filter: `blur(${(18 * (1 - presence)).toFixed(2)}px)`,
-          visibility: isVisible ? 'visible' : 'hidden',
-          pointerEvents: isInteractive ? 'auto' : 'none'
-        }}
-        aria-hidden={!isVisible}
-      >
-        {cards.map((card) => (
-          <FloatingElement key={card.id} depth={card.depth} className="works-card-position">
-            <button
-              className={`works-card works-card-${card.tone}`}
-              type="button"
-              onClick={() => openProject(card)}
-              disabled={!isInteractive}
-              tabIndex={isInteractive ? 0 : -1}
-              style={{
-                '--work-card-x': `${card.x}%`,
-                '--work-card-y': `${card.y}%`,
-                '--work-card-width': card.width,
-                '--work-card-depth': card.depth
-              } as CSSProperties}
-              aria-label={`Open ${card.title}`}
-            >
-              <img src={card.image} alt="" loading="eager" />
-              <span className="works-card-meta">
-                <span>{card.category}</span>
-                <strong>{card.title}</strong>
-              </span>
-            </button>
-          </FloatingElement>
-        ))}
-      </FloatingLayer>
+      {!activeWork && isVisible && homeCards.length > 0 && (
+        <FloatingLayer
+          className="works-board"
+          sensitivity={0.85}
+          easingFactor={0.06}
+          maxShift={112}
+          style={{
+            opacity: Math.pow(presence, 0.72),
+            filter: `blur(${(18 * (1 - presence)).toFixed(2)}px)`,
+            visibility: isVisible ? 'visible' : 'hidden',
+            pointerEvents: isInteractive ? 'auto' : 'none'
+          }}
+          aria-hidden={!isVisible}
+        >
+          {homeCards.map((card) => (
+            <FloatingElement key={card.id} depth={card.depth} className="works-card-position">
+              <button
+                className={`works-card works-card-${card.tone}`}
+                type="button"
+                onClick={() => openProject(card)}
+                disabled={!isInteractive}
+                tabIndex={isInteractive ? 0 : -1}
+                style={{
+                  '--work-card-x': `${card.x}%`,
+                  '--work-card-y': `${card.y}%`,
+                  '--work-card-width': card.width,
+                  '--work-card-depth': card.depth
+                } as CSSProperties}
+                aria-label={`Open ${card.title}`}
+              >
+                <img src={card.image} alt="" loading="eager" />
+                <span className="works-card-meta">
+                  <span>{card.category}</span>
+                  <strong>{card.title}</strong>
+                </span>
+              </button>
+            </FloatingElement>
+          ))}
+        </FloatingLayer>
+      )}
 
       {activeWork && (
         <section className="work-detail-page" aria-label={`${activeWork.title} project detail`}>
@@ -586,27 +572,57 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
                 </nav>
                 <header id="fotland-overview" className="project-case-hero">
                   <figure className="project-case-media">
-                    <img className="project-case-background" src={activeDetail.heroBackground} alt="" />
+                    <img
+                      className="project-case-background"
+                      src={activeDetail.heroBackground}
+                      srcSet={activeDetail.heroBackgroundSrcSet}
+                      sizes="100vw"
+                      alt=""
+                      decoding="async"
+                      fetchPriority="high"
+                    />
                   </figure>
                   <h1 className="project-case-title">{activeDetail.title}</h1>
                   <div className="project-case-logo-stage" aria-label="Fotland Bryggeri logo direction">
                     {activeDetail.logoImages.map((image, index) => (
-                      <img key={image} className={`project-case-logo project-case-logo-${index + 1}`} src={image} alt="" />
+                      <img
+                        key={image}
+                        className={`project-case-logo project-case-logo-${index + 1}`}
+                        src={image}
+                        alt=""
+                        decoding="async"
+                      />
                     ))}
                   </div>
                   <section className="project-case-story" aria-label="Project story">
                     {activeDetail.sections.map((section) => (
                       <div key={section.label} className="project-case-text-card">
                         <p>{section.label}</p>
-                        <span>{section.body}</span>
+                        {section.bodyHtml ? (
+                          <div
+                            className="project-case-text-body"
+                            dangerouslySetInnerHTML={{ __html: section.bodyHtml }}
+                          />
+                        ) : (
+                          <span>{section.body}</span>
+                        )}
                       </div>
                     ))}
                   </section>
                 </header>
 
-                <section id="fotland-presentation" className="project-case-full-image" aria-label="Project presentation">
-                  <img src={activeDetail.contentImage} alt="" />
-                </section>
+                {activeDetail.contentImage && (
+                  <section id="fotland-presentation" className="project-case-full-image" aria-label="Project presentation">
+                    <img src={activeDetail.contentImage} alt="" />
+                  </section>
+                )}
+                {activeDetail.contentHtml && (
+                  <section
+                    className="project-case-content"
+                    aria-label="Project presentation"
+                    dangerouslySetInnerHTML={{ __html: activeDetail.contentHtml }}
+                  />
+                )}
                 <MoreProjects projects={cards} currentSlug={activeWork.slug} />
                 <SeoFooter />
               </>
@@ -646,11 +662,4 @@ function getProjectSlugFromPath() {
   if (typeof window === 'undefined') return null;
   const match = window.location.pathname.match(/^\/projects\/([^/]+)\/?$/);
   return match ? decodeURIComponent(match[1]) : null;
-}
-
-function getProjectSectionScrollY() {
-  const spacer = document.querySelector<HTMLElement>('.story-scroll-spacer');
-  const scrollHeight = spacer?.offsetHeight ?? document.documentElement.scrollHeight;
-  const maxScroll = Math.max(scrollHeight - window.innerHeight, 0);
-  return maxScroll / 3;
 }

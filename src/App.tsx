@@ -750,7 +750,7 @@ function RoutePageShell({ children, label }: { children: ReactNode; label: strin
 }
 
 function ProjectsPage() {
-  const [projects, setProjects] = useState<WorkCard[]>(() => composeProjectCards());
+  const [projects, setProjects] = useState<WorkCard[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -762,7 +762,7 @@ function ProjectsPage() {
         }
       })
       .catch(() => {
-        setProjects(composeProjectCards());
+        setProjects([]);
       });
 
     return () => controller.abort();
@@ -928,6 +928,10 @@ export default function App() {
 
   if (routePath === '/service') {
     return <ServicePage />;
+  }
+
+  if (/^\/projects\/[^/]+\/?$/.test(routePath)) {
+    return <WorksFloatingCards progress={0} />;
   }
 
   return (
