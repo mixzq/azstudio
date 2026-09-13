@@ -20,8 +20,18 @@
   font-display: block;
 }
 
+@font-face {
+  font-family: "ManropeLocal";
+  src: url("/fonts/Manrope-VariableFont-wght.ttf") format("truetype");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
+  --font-display: "ITCAvantGardeLocal", "ITC Avant Garde Gothic", "Avant Garde", "Avenir Next", "Helvetica Neue", sans-serif;
+  --font-body: "ManropeLocal", "Manrope", "Avenir Next", "Helvetica Neue", sans-serif;
   --paper: #080807;
   --paper-low: #11100e;
   --ink: #f1eee7;
@@ -47,7 +57,27 @@ body,
   margin: 0;
   min-height: 100%;
   background: var(--paper);
-  font-family: "ITCAvantGardeLocal", "ITC Avant Garde Gothic", "Avant Garde", "Avenir Next", "Helvetica Neue", sans-serif;
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.brand-mark,
+.page-nav-brand,
+.project-sticky-brand,
+.seo-footer-logo,
+.gooey-word,
+.projects-index-label,
+.projects-index-card strong,
+.works-card-meta strong,
+.project-case-text-card > p,
+.project-more-card strong,
+.service-detail-body strong {
+  font-family: var(--font-display);
 }
 
 body {
@@ -540,7 +570,7 @@ body {
   top: 50%;
   width: 100%;
   color: var(--ink);
-  font-family: "ITCAvantGardeLocal", "ITC Avant Garde Gothic", "Avant Garde", "Avenir Next", "Helvetica Neue", sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(66px, 11vw, 160px);
   font-weight: 850;
   line-height: 0.86;
@@ -871,7 +901,7 @@ body {
   border: 1px solid rgba(241, 238, 231, 0.14);
   border-radius: 999px;
   padding: 10px 22px 9px;
-  font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-body);
   font-weight: 500;
   font-size: clamp(13px, 1.28vw, 18px);
   line-height: 1.2;
@@ -964,7 +994,7 @@ body {
   border: 1px solid rgba(241, 238, 231, 0.28);
   border-radius: 999px;
   padding: 13px 24px 12px;
-  font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-body);
   font-weight: 500;
   font-size: clamp(14px, 1.6vw, 22px);
   line-height: 1.2;
@@ -1145,8 +1175,8 @@ body {
 
 .project-case-text-card p {
   color: rgba(241, 238, 231, 0.94);
-  font-size: clamp(28px, 2.8vw, 48px);
-  line-height: 1.02;
+  font-size: clamp(26px, 2.3vw, 40px);
+  line-height: 1;
   text-transform: none;
 }
 
@@ -1195,10 +1225,10 @@ body {
   z-index: 2;
   align-self: end;
   justify-self: center;
-  width: min(78vw, 1020px);
+  width: min(84vw, 1180px);
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(42px, 6vw, 86px);
+  gap: clamp(48px, 7vw, 108px);
   margin-top: clamp(32px, 4vw, 64px);
 }
 
@@ -1215,11 +1245,11 @@ body {
 
 .project-case-text-card span,
 .project-case-text-body {
-  max-width: 52ch;
+  max-width: 48ch;
   color: rgba(241, 238, 231, 0.9);
-  font-size: clamp(13px, 1.25vw, 18px);
-  line-height: 1.46;
-  font-weight: 500;
+  font-size: clamp(14px, 1vw, 17px);
+  line-height: 1.58;
+  font-weight: 450;
   text-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
 }
 
