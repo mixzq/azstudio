@@ -95,45 +95,6 @@ const WORDPRESS_API_BASE =
   import.meta.env.VITE_WORDPRESS_API_BASE ??
   'https://public-api.wordpress.com/wp/v2/sites/mixzq9.wordpress.com';
 
-const LOCAL_PREVIEW_WORK: WordPressWork = {
-  id: 'local-preview-test-project',
-  slug: 'test-project',
-  title: 'Test Project',
-  category: 'Test Project',
-  excerpt: 'A local preview used to verify the WordPress and React project data connection.',
-  contentHtml: `
-    <figure class="wp-block-image size-full">
-      <img src="/PIC/fotland_bryggeri/content-part-01.webp" srcset="/PIC/fotland_bryggeri/content-part-01-1280.webp 1280w, /PIC/fotland_bryggeri/content-part-01.webp 3200w" sizes="100vw" alt="" width="3200" height="2583" loading="lazy" decoding="async" />
-    </figure>
-    <figure class="wp-block-image size-full">
-      <img src="/PIC/fotland_bryggeri/content-part-02.webp" srcset="/PIC/fotland_bryggeri/content-part-02-1280.webp 1280w, /PIC/fotland_bryggeri/content-part-02.webp 3200w" sizes="100vw" alt="" width="3200" height="2583" loading="lazy" decoding="async" />
-    </figure>
-    <figure class="wp-block-image size-full">
-      <img src="/PIC/fotland_bryggeri/content-part-03.webp" srcset="/PIC/fotland_bryggeri/content-part-03-1280.webp 1280w, /PIC/fotland_bryggeri/content-part-03.webp 3200w" sizes="100vw" alt="" width="3200" height="2583" loading="lazy" decoding="async" />
-    </figure>
-    <figure class="wp-block-image size-full">
-      <img src="/PIC/fotland_bryggeri/content-part-04.webp" srcset="/PIC/fotland_bryggeri/content-part-04-1280.webp 1280w, /PIC/fotland_bryggeri/content-part-04.webp 3200w" sizes="100vw" alt="" width="3200" height="2583" loading="lazy" decoding="async" />
-    </figure>
-  `,
-  image: '/PIC/Frame 149.png',
-  showOnHome: false,
-  displayOrder: 999,
-  seoTitle: 'Test Project | AZ Studio',
-  seoDescription: 'A local test project for validating the AZ Studio portfolio template.',
-  projectDetail: {
-    heroBackground: '/PIC/fotland_bryggeri/top_part_background.webp',
-    heroBackgroundSrcSet: '/PIC/fotland_bryggeri/top_part_background-1280.webp 1280w, /PIC/fotland_bryggeri/top_part_background.webp 2560w',
-    heroLogo: '/PIC/fotland_bryggeri/logo.svg',
-    heroSummary: 'A structured test case for checking project cards, detail pages and content fields.',
-    client: 'AZ Studio',
-    year: '2026',
-    location: 'Oslo, Norway',
-    services: 'Brand Identity\nWeb Design',
-    aboutBrandHtml: '<p>This local preview shows how structured WordPress fields become a consistent case study page.</p>',
-    projectGoalsHtml: '<p>Confirm the card data, hero layout, detail content and responsive presentation before migrating the real projects.</p>'
-  }
-};
-
 function decodeHtml(value: string) {
   const textarea = document.createElement('textarea');
   textarea.innerHTML = value;
@@ -305,10 +266,5 @@ export async function getWordPressWorks(signal?: AbortSignal): Promise<WordPress
 
   const mediaCache = new Map<string, Promise<string | undefined>>();
   const works = await Promise.all(posts.map((post) => mapWordPressWork(post, mediaCache, signal)));
-  const worksWithPreview = import.meta.env.DEV
-    ? [...works.filter((work) => work.slug !== LOCAL_PREVIEW_WORK.slug), LOCAL_PREVIEW_WORK]
-    : works;
-
-  return worksWithPreview
-    .sort((first, second) => first.displayOrder - second.displayOrder);
+  return works.sort((first, second) => first.displayOrder - second.displayOrder);
 }

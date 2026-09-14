@@ -774,15 +774,13 @@ function ProjectsPage() {
         <div className="projects-index-hero">
           <h1>{projectManifestoText}</h1>
         </div>
-        <p id="projects-index-heading" className="projects-index-label">Selected work</p>
+        <p id="projects-index-heading" className="projects-index-label">Selected works</p>
         <div className="projects-index-grid">
           {projects.map((project) => (
             <a key={project.slug} className="projects-index-card" href={`/projects/${project.slug}`}>
               <img src={project.image} alt="" loading="lazy" />
               <span>
-                <small>{project.category}</small>
                 <strong>{project.title}</strong>
-                <em>{project.excerpt}</em>
               </span>
             </a>
           ))}
