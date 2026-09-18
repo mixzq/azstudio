@@ -643,8 +643,8 @@ body {
     0 0 calc(18px + var(--service-depth) * 18px) rgba(241, 238, 231, 0.035);
   color: var(--ink);
   overflow: hidden;
-  pointer-events: none;
-  cursor: default;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .service-copy-image {

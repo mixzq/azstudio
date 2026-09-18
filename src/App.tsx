@@ -540,10 +540,12 @@ function FloatingService({ progress, pointerX, pointerY }: { progress: number; p
         const opacity = Math.pow(cardPresence, 0.52);
         const blur = 34 * (1 - cardPresence);
         const isVisible = cardPresence > 0.01;
+        const isInteractive = cardPresence > 0.12;
 
         return (
-          <article
+          <a
             key={serviceCards[index].title}
+            href="/service"
             className={`about-copy service-copy service-copy-${index + 1}`}
             style={{
               ...baseStyle,
@@ -551,10 +553,12 @@ function FloatingService({ progress, pointerX, pointerY }: { progress: number; p
               filter: `blur(${blur.toFixed(2)}px)`,
               transform: baseStyle.transform,
               visibility: isVisible ? 'visible' : 'hidden',
+              pointerEvents: isInteractive ? 'auto' : 'none',
               '--service-depth': item.depth
             } as CSSProperties}
-            aria-hidden={!isVisible}
+            aria-hidden={!isInteractive}
             aria-label={serviceCards[index].title}
+            tabIndex={isInteractive ? 0 : -1}
           >
             <div className="service-copy-image" aria-hidden="true">
               <img src={serviceCards[index].image} alt="" />
@@ -563,7 +567,7 @@ function FloatingService({ progress, pointerX, pointerY }: { progress: number; p
               <h2>{serviceCards[index].title}</h2>
               <p>{serviceCards[index].description}</p>
             </div>
-          </article>
+          </a>
         );
       })}
     </section>
