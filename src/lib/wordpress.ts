@@ -39,7 +39,8 @@ type WordPressCategory = {
 type WordPressMedia = {
   source_url?: string;
   media_details?: {
-    sizes?: Record<string, { source_url?: string }>;
+    width?: number;
+    sizes?: Record<string, { source_url?: string; width?: number }>;
   };
 };
 
@@ -88,13 +89,19 @@ type WordPressImageField =
   | {
       url?: string;
       source_url?: string;
-      sizes?: Record<string, string>;
+      width?: number;
+      sizes?: Record<string, string | number | false>;
     };
+
+type ResponsiveImage = {
+  src?: string;
+  srcSet?: string;
+};
 
 const WORDPRESS_API_BASE =
   import.meta.env.VITE_WORDPRESS_API_BASE ??
   'https://public-api.wordpress.com/wp/v2/sites/mixzq9.wordpress.com';
-const WORKS_CACHE_KEY = 'azstudio:wordpress-works:v1';
+const WORKS_CACHE_KEY = 'azstudio:wordpress-works:v2';
 const WORKS_CACHE_MAX_AGE = 60 * 1000;
 
 type CachedWorks = {
@@ -164,7 +171,72 @@ function imageFromField(image?: WordPressImageField) {
     return /^\d+$/.test(value) ? undefined : value || undefined;
   }
 
-  return image?.sizes?.large ?? image?.sizes?.medium_large ?? image?.url ?? image?.source_url;
+  const large = image?.sizes?.large;
+  const mediumLarge = image?.sizes?.medium_large;
+
+  return (
+    (typeof large === 'string' ? large : undefined) ??
+    (typeof mediumLarge === 'string' ? mediumLarge : undefined) ??
+    image?.url ??
+    image?.source_url
+  );
+}
+
+function responsiveImageFromField(image?: WordPressImageField): ResponsiveImage {
+  const src = imageFromField(image);
+  if (!image || typeof image === 'number' || typeof image === 'string') return { src };
+
+  const candidates = [
+    ['medium_large', 768],
+    ['large', 1024],
+    ['1536x1536', 1536],
+    ['2048x2048', 2048]
+  ].flatMap(([name, fallbackWidth]) => {
+    const url = image.sizes?.[name];
+    const storedWidth = Number(image.sizes?.[`${name}-width`]);
+    if (typeof url !== 'string') return [];
+    return [{ url, width: storedWidth > 0 ? storedWidth : Number(fallbackWidth) }];
+  });
+
+  const originalUrl = image.url ?? image.source_url;
+  if (originalUrl && Number(image.width) > 0) {
+    candidates.push({ url: originalUrl, width: Number(image.width) });
+  }
+
+  const uniqueCandidates = Array.from(
+    new Map(candidates.map((candidate) => [candidate.width, candidate])).values()
+  ).sort((first, second) => first.width - second.width);
+
+  return {
+    src,
+    srcSet: uniqueCandidates.length > 1
+      ? uniqueCandidates.map((candidate) => `${candidate.url} ${candidate.width}w`).join(', ')
+      : undefined
+  };
+}
+
+function responsiveImageFromMedia(media?: WordPressMedia): ResponsiveImage {
+  const src = imageFromMedia(media);
+  const candidates = Object.values(media?.media_details?.sizes ?? {}).flatMap((size) => (
+    size.source_url && Number(size.width) > 0
+      ? [{ url: size.source_url, width: Number(size.width) }]
+      : []
+  ));
+
+  if (media?.source_url && Number(media.media_details?.width) > 0) {
+    candidates.push({ url: media.source_url, width: Number(media.media_details?.width) });
+  }
+
+  const uniqueCandidates = Array.from(
+    new Map(candidates.map((candidate) => [candidate.width, candidate])).values()
+  ).sort((first, second) => first.width - second.width);
+
+  return {
+    src,
+    srcSet: uniqueCandidates.length > 1
+      ? uniqueCandidates.map((candidate) => `${candidate.url} ${candidate.width}w`).join(', ')
+      : undefined
+  };
 }
 
 function mediaIdFromField(image?: WordPressImageField) {
@@ -184,25 +256,25 @@ async function fetchMediaImage(url: string, signal?: AbortSignal) {
       signal
     });
 
-    if (!response.ok) return undefined;
-    return imageFromMedia((await response.json()) as WordPressMedia);
+    if (!response.ok) return {};
+    return responsiveImageFromMedia((await response.json()) as WordPressMedia);
   } catch (error) {
     if (signal?.aborted) throw error;
-    return undefined;
+    return {};
   }
 }
 
 function resolveImageField(
   image: WordPressImageField | undefined,
   post: WordPressPost,
-  mediaCache: Map<string, Promise<string | undefined>>,
+  mediaCache: Map<string, Promise<ResponsiveImage>>,
   signal?: AbortSignal
-) {
-  const directImage = imageFromField(image);
-  if (directImage) return Promise.resolve(directImage);
+): Promise<ResponsiveImage> {
+  const directImage = responsiveImageFromField(image);
+  if (directImage.src) return Promise.resolve(directImage);
 
   const mediaId = mediaIdFromField(image);
-  if (!mediaId || !post.link) return Promise.resolve(undefined);
+  if (!mediaId || !post.link) return Promise.resolve<ResponsiveImage>({});
 
   const mediaUrl = new URL(`/wp-json/wp/v2/media/${mediaId}`, post.link).toString();
   const cachedRequest = mediaCache.get(mediaUrl);
@@ -242,7 +314,7 @@ async function getWordPressPosts(endpoint: 'projects' | 'posts', signal?: AbortS
 
 async function mapWordPressWork(
   post: WordPressPost,
-  mediaCache: Map<string, Promise<string | undefined>>,
+  mediaCache: Map<string, Promise<ResponsiveImage>>,
   signal?: AbortSignal
 ): Promise<WordPressWork> {
   const acf = post.acf;
@@ -254,7 +326,7 @@ async function mapWordPressWork(
     resolveImageField(acf?.hero_logo, post, mediaCache, signal),
     resolveImageField(acf?.social_image, post, mediaCache, signal)
   ]);
-  const image = cardImage ?? imageFromPost(post);
+  const image = cardImage.src ?? imageFromPost(post);
 
   return {
     id: `wp-${post.id}`,
@@ -269,11 +341,12 @@ async function mapWordPressWork(
     displayOrder: Number.isFinite(order) ? order : 100,
     seoTitle: textFromHtml(acf?.seo_title) || undefined,
     seoDescription: textFromHtml(acf?.seo_description) || undefined,
-    socialImage,
+    socialImage: socialImage.src,
     projectDetail: acf
       ? {
-          heroBackground: heroBackground ?? image,
-          heroLogo,
+          heroBackground: heroBackground.src ?? image,
+          heroBackgroundSrcSet: heroBackground.srcSet,
+          heroLogo: heroLogo.src,
           heroSummary: textFromHtml(acf.hero_summary) || excerpt,
           client: textFromHtml(acf.client) || undefined,
           year: textFromHtml(acf.year) || undefined,
@@ -301,7 +374,7 @@ export async function getWordPressWorks(signal?: AbortSignal): Promise<WordPress
     posts = await getWordPressPosts('posts', signal);
   }
 
-  const mediaCache = new Map<string, Promise<string | undefined>>();
+  const mediaCache = new Map<string, Promise<ResponsiveImage>>();
   const works = await Promise.all(posts.map((post) => mapWordPressWork(post, mediaCache, signal)));
   const sortedWorks = works.sort((first, second) => first.displayOrder - second.displayOrder);
   cacheWordPressWorks(sortedWorks);

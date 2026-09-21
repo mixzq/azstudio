@@ -583,33 +583,33 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
                     />
                   </figure>
                   <h1 className="project-case-title">{activeDetail.title}</h1>
-                  <div className="project-case-logo-stage" aria-label="Fotland Bryggeri logo direction">
-                    {activeDetail.logoImages.map((image, index) => (
-                      <img
-                        key={image}
-                        className={`project-case-logo project-case-logo-${index + 1}`}
-                        src={image}
-                        alt=""
-                        decoding="async"
-                      />
-                    ))}
-                  </div>
-                  <section className="project-case-story" aria-label="Project story">
-                    {activeDetail.sections.map((section) => (
-                      <div key={section.label} className="project-case-text-card">
-                        <p>{section.label}</p>
-                        {section.bodyHtml ? (
-                          <div
-                            className="project-case-text-body"
-                            dangerouslySetInnerHTML={{ __html: section.bodyHtml }}
-                          />
-                        ) : (
-                          <span>{section.body}</span>
-                        )}
-                      </div>
-                    ))}
-                  </section>
                 </header>
+                <section className="project-case-logo-stage" aria-label={`${activeDetail.title} logo direction`}>
+                  {activeDetail.logoImages.map((image, index) => (
+                    <img
+                      key={image}
+                      className={`project-case-logo project-case-logo-${index + 1}`}
+                      src={image}
+                      alt=""
+                      decoding="async"
+                    />
+                  ))}
+                </section>
+                <section className="project-case-story" aria-label="Project story">
+                  {activeDetail.sections.map((section) => (
+                    <div key={section.label} className="project-case-text-card">
+                      <p>{section.label}</p>
+                      {section.bodyHtml ? (
+                        <div
+                          className="project-case-text-body"
+                          dangerouslySetInnerHTML={{ __html: section.bodyHtml }}
+                        />
+                      ) : (
+                        <span>{section.body}</span>
+                      )}
+                    </div>
+                  ))}
+                </section>
 
                 {activeDetail.contentImage && (
                   <section id="fotland-presentation" className="project-case-full-image" aria-label="Project presentation">

@@ -910,9 +910,11 @@ function LandingPage() {
         <section className="landing-hero" aria-labelledby="landing-title">
           <p className="landing-eyebrow">Creative studio based in Norway</p>
           <h1 id="landing-title">
-            <span>Your first step starts here.</span>
-            <span className="landing-hero-line">We help you find your <LandingKeyword /></span>
+            Your first step starts here.
           </h1>
+          <div className="landing-morph-panel">
+            <LandingKeyword />
+          </div>
           <p className="landing-intro">
             We help small businesses and emerging brands turn early ideas into clear identities,
             thoughtful websites and meaningful digital experiences.
@@ -961,16 +963,18 @@ function LandingPage() {
             <p className="landing-section-label">Selected work</p>
             <h2 id="landing-work-title">One idea, shaped into a complete identity.</h2>
           </div>
-          <a className="landing-project-card" href={`/projects/${project.slug}`}>
-            <img src={project.image} alt={`${project.title} project`} loading="lazy" />
-            <span className="landing-project-shade" />
-            <span className="landing-project-copy">
-              <small>Brand identity · Logo design · Visual direction</small>
-              <strong>{project.title}</strong>
-              <span>{project.excerpt}</span>
-              <em>View the project ↗</em>
-            </span>
-          </a>
+          <div className="landing-project-card-frame">
+            <a className="landing-project-card" href={`/projects/${project.slug}`}>
+              <img src={project.image} alt={`${project.title} project`} loading="lazy" />
+              <span className="landing-project-shade" />
+              <span className="landing-project-copy">
+                <small>Brand identity · Logo design · Visual direction</small>
+                <strong>{project.title}</strong>
+                <span>{project.excerpt}</span>
+                <em>View the project ↗</em>
+              </span>
+            </a>
+          </div>
         </section>
 
         <section className="landing-process landing-section" aria-labelledby="landing-process-title">

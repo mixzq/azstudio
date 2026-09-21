@@ -1094,7 +1094,7 @@ body {
 .work-detail-page:has(.work-detail-panel-case) {
   display: block;
   padding: 0;
-  background: #050504;
+  background: var(--paper);
   backdrop-filter: none;
 }
 
@@ -1207,14 +1207,11 @@ body {
 
 .project-case-hero {
   position: relative;
-  display: grid;
-  grid-template-rows: auto auto;
-  align-content: center;
-  row-gap: clamp(28px, 3vw, 48px);
-  min-height: 100svh;
+  min-height: clamp(430px, 58vw, 860px);
   box-sizing: border-box;
-  padding: clamp(96px, 9vw, 144px) 0 clamp(56px, 6vw, 96px);
+  padding: 0;
   overflow: hidden;
+  background: var(--paper);
 }
 
 .project-case-title {
@@ -1240,8 +1237,8 @@ body {
 
 .project-case-text-card>p {
   color: rgba(241, 238, 231, 0.94);
-  font-size: clamp(32px, 2.969vw, 44.892px);
-  line-height: 1.2475;
+  font-size: clamp(28px, 2.65vw, 42px);
+  line-height: 1.12;
   text-transform: none;
 }
 
@@ -1256,6 +1253,21 @@ body {
   box-shadow: none;
 }
 
+.project-case-media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(8, 8, 7, 0) 58%,
+    rgba(8, 8, 7, 0.12) 68%,
+    rgba(8, 8, 7, 0.58) 84%,
+    var(--paper) 100%
+  );
+}
+
 .project-case-background {
   position: absolute;
   inset: 0;
@@ -1264,36 +1276,37 @@ body {
   height: 100%;
   object-fit: cover;
   opacity: 1;
-  filter: saturate(0.82) contrast(1.08) brightness(0.58);
+  filter: saturate(0.9) contrast(1.05) brightness(0.78);
 }
 
 .project-case-logo-stage {
   position: relative;
   z-index: 2;
+  width: 100%;
+  min-height: clamp(240px, 30vw, 440px);
   display: grid;
   place-items: center;
-  align-self: center;
-  justify-self: center;
-  width: min(72vw, 860px);
+  padding: clamp(56px, 8vw, 120px) clamp(24px, 7vw, 108px);
+  background: var(--paper);
 }
 
 .project-case-logo {
   display: block;
-  width: min(54vw, 650px);
-  max-height: min(28svh, 320px);
+  width: min(46vw, 700px);
+  max-height: min(25svh, 300px);
   object-fit: contain;
-  filter: drop-shadow(0 18px 38px rgba(0, 0, 0, 0.44));
+  filter: none;
 }
 
 .project-case-story {
   position: relative;
   z-index: 2;
-  justify-self: center;
-  width: min(79.862vw, 1207.512px);
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(48px, 4.662vw, 70.488px);
-  transform: translateX(8.75px);
+  gap: clamp(48px, 8vw, 132px);
+  padding: 0 clamp(34px, 7vw, 112px) clamp(88px, 10vw, 154px);
+  background: var(--paper);
 }
 
 .project-case-text-card {
@@ -1309,12 +1322,12 @@ body {
 
 .project-case-text-card span,
 .project-case-text-body {
-  max-width: 100%;
-  color: rgba(241, 238, 231, 0.9);
-  font-size: clamp(15px, 1.256vw, 18.993px);
-  line-height: 1.257;
+  max-width: 62ch;
+  color: rgba(241, 238, 231, 0.72);
+  font-size: clamp(13px, 1.05vw, 16px);
+  line-height: 1.55;
   font-weight: 400;
-  text-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
+  text-shadow: none;
 }
 
 .project-case-text-body>* {
@@ -1861,9 +1874,9 @@ body {
 .landing-hero {
   min-height: 100svh;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.36fr);
-  grid-template-rows: 1fr auto auto 1fr;
-  column-gap: clamp(42px, 8vw, 140px);
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.62fr);
+  grid-template-rows: 1fr auto auto auto 1fr;
+  column-gap: clamp(56px, 9vw, 150px);
   align-items: end;
   padding: clamp(136px, 17vh, 190px) 0 clamp(56px, 7vh, 88px);
 }
@@ -1888,60 +1901,76 @@ body {
 
 .landing-hero h1 {
   grid-column: 1;
+  grid-row: 2;
   margin: 0;
-  display: grid;
-  gap: clamp(8px, 1.1vw, 18px);
+  max-width: 12ch;
   color: var(--ink);
-  font-size: clamp(42px, 5.35vw, 88px);
+  font-size: clamp(42px, 4.6vw, 76px);
   line-height: 0.98;
   font-weight: 500;
   letter-spacing: -0.035em;
   animation: landingFadeUp 850ms 250ms both;
 }
 
-.landing-hero-line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.24em;
+.landing-morph-panel {
+  grid-column: 2;
+  grid-row: 2 / 5;
+  align-self: center;
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: clamp(12px, 1.5vw, 22px);
+  animation: landingFadeUp 850ms 420ms both;
 }
 
 .landing-keyword {
   position: relative;
-  display: inline-grid;
-  min-width: 5.8ch;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
+  min-height: 0.98em;
   color: var(--ink);
-  font-size: 1.18em;
+  font-family: var(--font-display);
+  font-size: clamp(64px, 8vw, 126px);
+  line-height: 0.88;
   font-weight: 850;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.055em;
+  text-align: center;
   filter: url("#threshold");
 }
 
 .landing-keyword>span {
   grid-area: 1 / 1;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  white-space: nowrap;
   transform: scale(var(--text-scale, 1));
-  transform-origin: left center;
+  transform-origin: center;
   will-change: filter, opacity, transform;
 }
 
 .landing-intro {
-  grid-column: 2;
-  margin: 0 0 0.3em;
-  max-width: 35ch;
+  grid-column: 1;
+  grid-row: 3;
+  margin: clamp(24px, 3.2vh, 38px) 0 0;
+  max-width: 48ch;
   color: rgba(241, 238, 231, 0.62);
   font-size: clamp(14px, 1.2vw, 18px);
   line-height: 1.6;
   font-weight: 500;
-  animation: landingFadeUp 850ms 420ms both;
+  animation: landingFadeUp 850ms 500ms both;
 }
 
 .landing-actions {
-  grid-column: 1 / -1;
+  grid-column: 1;
+  grid-row: 4;
   display: flex;
   align-items: center;
   gap: 24px;
-  padding-top: clamp(34px, 5vh, 58px);
-  animation: landingFadeUp 850ms 560ms both;
+  padding-top: clamp(24px, 3.5vh, 40px);
+  animation: landingFadeUp 850ms 620ms both;
 }
 
 .landing-primary-link,
@@ -1978,6 +2007,7 @@ body {
 
 .landing-scroll-cue {
   grid-column: 2;
+  grid-row: 5;
   justify-self: end;
   align-self: end;
   display: flex;
@@ -2110,8 +2140,16 @@ body {
   transform: translate(3px, -3px);
 }
 
+.landing-project-card-frame {
+  position: relative;
+  width: 30%;
+  height: min(20.4vw, 228px);
+  margin-inline: auto;
+}
+
 .landing-project-card {
   position: relative;
+  width: 333.333%;
   min-height: min(68vw, 760px);
   display: flex;
   align-items: flex-end;
@@ -2121,6 +2159,8 @@ body {
   color: var(--ink);
   text-decoration: none;
   background: #111;
+  transform: scale(0.3);
+  transform-origin: left top;
 }
 
 .landing-project-card>img,
@@ -2623,40 +2663,35 @@ body {
   }
 
   .project-case-hero {
-    grid-template-rows: auto auto;
-    align-content: safe center;
-    row-gap: 24px;
-    min-height: 100svh;
-    padding: 72px 22px 44px;
+    min-height: clamp(340px, 78vw, 560px);
+    padding: 0;
   }
 
   .project-case-title {
-    top: 46px;
+    top: 72px;
     font-size: 13px;
   }
 
   .project-case-media {
-    min-height: 0;
+    min-height: 100%;
   }
 
   .project-case-logo-stage {
-    width: 82vw;
+    width: 100%;
+    min-height: 220px;
+    padding: 52px 22px;
   }
 
   .project-case-logo {
     width: 76vw;
-    max-height: 168px;
+    max-height: 190px;
   }
 
   .project-case-story {
-    position: relative;
-    top: auto;
-    left: auto;
     width: 100%;
     grid-template-columns: 1fr;
-    gap: 24px;
-    margin-top: 0;
-    transform: none;
+    gap: 46px;
+    padding: 0 22px 76px;
   }
 
   .project-case-text-card {
@@ -2665,15 +2700,15 @@ body {
   }
 
   .project-case-text-card>p {
-    font-size: 24px;
+    font-size: 28px;
     line-height: 1.2;
   }
 
   .project-case-text-card span,
   .project-case-text-body {
     max-width: 100%;
-    font-size: 12px;
-    line-height: 1.38;
+    font-size: 13px;
+    line-height: 1.52;
   }
 
   .project-case-content {
@@ -2744,7 +2779,7 @@ body {
   .landing-hero {
     min-height: 100svh;
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto auto 1fr;
+    grid-template-rows: auto auto auto auto auto 1fr;
     gap: 0;
     align-content: center;
     padding: 148px 0 38px;
@@ -2752,6 +2787,7 @@ body {
 
   .landing-eyebrow,
   .landing-hero h1,
+  .landing-morph-panel,
   .landing-intro,
   .landing-actions,
   .landing-scroll-cue {
@@ -2763,30 +2799,44 @@ body {
   }
 
   .landing-hero h1 {
+    grid-row: auto;
+    max-width: 10ch;
     font-size: clamp(39px, 12vw, 64px);
     line-height: 1;
   }
 
-  .landing-hero-line {
-    display: block;
+  .landing-morph-panel {
+    grid-row: auto;
+    align-self: start;
+    gap: 10px;
+    margin-top: 28px;
   }
 
   .landing-keyword {
     display: grid;
-    min-height: 1.16em;
-    margin-top: 0.08em;
+    min-height: 0.98em;
+    font-size: clamp(54px, 17vw, 78px);
+    text-align: left;
+  }
+
+  .landing-keyword>span {
+    justify-content: flex-start;
+    transform-origin: left center;
   }
 
   .landing-intro {
+    grid-row: auto;
     max-width: 32ch;
     margin-top: 28px;
   }
 
   .landing-actions {
+    grid-row: auto;
     padding-top: 30px;
   }
 
   .landing-scroll-cue {
+    grid-row: auto;
     justify-self: start;
     margin-top: 54px;
   }
@@ -2836,7 +2886,14 @@ body {
   }
 
   .landing-project-card {
+    width: 100%;
     min-height: 590px;
+    transform: none;
+  }
+
+  .landing-project-card-frame {
+    width: 100%;
+    height: 590px;
   }
 
   .landing-project-copy {
