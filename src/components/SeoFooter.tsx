@@ -32,7 +32,7 @@ export function SeoFooter() {
           <section className="seo-footer-section" aria-labelledby="footer-contact-heading">
             <h2 id="footer-contact-heading">Contact</h2>
             <a href="mailto:mixzq@outlook.com">Email</a>
-            <a href="/contact">Start a project</a>
+            <a href="/start">Start</a>
             <a href="https://azstudio.no/">azstudio.no</a>
             <a href="/sitemap.xml">Sitemap</a>
           </section>

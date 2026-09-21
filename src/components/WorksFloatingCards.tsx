@@ -10,7 +10,7 @@ import {
   useState
 } from 'react';
 import { SeoFooter } from '@/components/SeoFooter';
-import { WordPressWork, getWordPressWorks } from '../lib/wordpress';
+import { WordPressWork, getCachedWordPressWorks, getWordPressWorks } from '../lib/wordpress';
 
 type FloatingContextType = {
   registerElement: (id: string, element: HTMLDivElement, depth: number) => void;
@@ -440,7 +440,7 @@ function FloatingElement({ children, className, depth = 0.3 }: FloatingElementPr
 
 export function WorksFloatingCards({ progress }: { progress: number }) {
   const activeSlug = getProjectSlugFromPath();
-  const [cards, setCards] = useState<WorkCard[]>([]);
+  const [cards, setCards] = useState<WorkCard[]>(() => composeCards(getCachedWordPressWorks()));
   const enter = easeOut(map(progress, 0.48, 0.62, 0, 1));
   const leave = easeInOut(map(progress, 0.76, 0.88, 0, 1));
   const presence = clamp(enter * (1 - leave));
@@ -460,7 +460,7 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
         }
       })
       .catch(() => {
-        setCards([]);
+        // Keep the already displayed project if a refresh fails.
       });
 
     return () => controller.abort();

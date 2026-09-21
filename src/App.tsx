@@ -27,13 +27,13 @@ type MotionState = {
   progress: number;
   pointerX: number;
   pointerY: number;
-  elapsed: number;
 };
 
-const introTexts = ['Where', 'Brands', 'Find', 'Their', 'Voice', 'azstudio'];
-const introFirstHoldDuration = 500;
-const introHoldDuration = 100;
-const introTransitionDurations = [455, 455, 455, 455, 1680];
+const heroWords = ['Style', 'Voice', 'Audience'];
+const heroCopyFadeDuration = 900;
+const heroWordRevealDuration = 400;
+const heroWordHoldDuration = 1050;
+const heroWordMorphDuration = 750;
 
 const serviceCards = [
   {
@@ -221,21 +221,17 @@ function useStoryboardMotion(isActive = true) {
   const [motion, setMotion] = useState<MotionState>({
     progress: 0,
     pointerX: 0,
-    pointerY: 0,
-    elapsed: 0
+    pointerY: 0
   });
   const pointerRef = useRef({ targetX: 0, targetY: 0, x: 0, y: 0 });
-  const introStartRef = useRef(0);
   const rafRef = useRef<number | null>(null);
-  const autoAdvancedRef = useRef(false);
 
   useEffect(() => {
     if (!isActive) {
       setMotion({
         progress: 0,
         pointerX: 0,
-        pointerY: 0,
-        elapsed: 0
+        pointerY: 0
       });
       return undefined;
     }
@@ -245,7 +241,6 @@ function useStoryboardMotion(isActive = true) {
     }
     window.scrollTo(0, 0);
 
-    introStartRef.current = performance.now();
     rafRef.current = null;
 
     const readProgress = () => {
@@ -261,19 +256,11 @@ function useStoryboardMotion(isActive = true) {
       setMotion({
         progress: readProgress(),
         pointerX: pointer.x,
-        pointerY: pointer.y,
-        elapsed: performance.now() - introStartRef.current
+        pointerY: pointer.y
       });
 
-      const elapsed = performance.now() - introStartRef.current;
-      if (!autoAdvancedRef.current && elapsed >= getIntroDuration() + 250 && window.scrollY < 8 && !window.location.pathname.startsWith('/projects/')) {
-        autoAdvancedRef.current = true;
-        smoothScrollToProgress(1 / 3);
-      }
-
       const needsPointerFrame = Math.abs(pointer.targetX - pointer.x) > 0.001 || Math.abs(pointer.targetY - pointer.y) > 0.001;
-      const needsIntroFrame = elapsed < getIntroDuration() + 900;
-      rafRef.current = needsPointerFrame || needsIntroFrame ? requestAnimationFrame(tick) : null;
+      rafRef.current = needsPointerFrame ? requestAnimationFrame(tick) : null;
     };
 
     const requestTick = () => {
@@ -349,62 +336,62 @@ function useGridHoverLight() {
   }, []);
 }
 
-function getIntroState(elapsed: number) {
-  const transitionCount = introTransitionDurations.length;
-  const introDuration = getIntroDuration();
-  const scrollPresence = 1;
+function HeroStatement({ progress }: { progress: number }) {
+  const [elapsed, setElapsed] = useState(0);
+  const isVisible = progress < 0.13;
 
-  if (elapsed < introFirstHoldDuration) {
-    return [
-      { text: introTexts[0], small: false, compact: false, style: getTextMorphStyle(scrollPresence, 0, true) },
-      { text: '', small: false, compact: false, style: getTextMorphStyle(0, 0, true) }
-    ];
-  }
+  useEffect(() => {
+    if (!isVisible) return undefined;
 
-  if (elapsed >= introDuration) {
-    return [
-      { text: 'azstudio', small: false, compact: false, style: getTextMorphStyle(scrollPresence, 0, true) },
-      { text: '', small: false, compact: false, style: getTextMorphStyle(0, 0, true) }
-    ];
-  }
+    const startTime = performance.now();
+    let frame: number;
+    const tick = (now: number) => {
+      setElapsed(now - startTime);
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
 
-  let timelineTime = elapsed - introFirstHoldDuration;
-  let rawIndex = transitionCount - 1;
-  let morphDuration = introTransitionDurations[rawIndex];
+    return () => cancelAnimationFrame(frame);
+  }, [isVisible]);
 
-  for (let index = 0; index < transitionCount; index += 1) {
-    const segmentDuration = introTransitionDurations[index] + introHoldDuration;
-    if (timelineTime <= segmentDuration) {
-      rawIndex = index;
-      morphDuration = introTransitionDurations[index];
-      break;
-    }
-    timelineTime -= segmentDuration;
-  }
+  const presence = 1 - easeInOut(map(progress, 0.02, 0.13, 0, 1));
+  const reveal = clamp((elapsed - heroCopyFadeDuration) / heroWordRevealDuration);
+  const cycleDuration = heroWordHoldDuration + heroWordMorphDuration;
+  const cycleElapsed = Math.max(0, elapsed - heroCopyFadeDuration - heroWordRevealDuration);
+  const cycleIndex = Math.floor(cycleElapsed / cycleDuration);
+  const cycleTime = cycleElapsed % cycleDuration;
+  const morph = cycleTime < heroWordHoldDuration
+    ? 0
+    : easeInOut((cycleTime - heroWordHoldDuration) / heroWordMorphDuration);
+  const currentWord = cycleIndex % heroWords.length;
+  const nextWord = (currentWord + 1) % heroWords.length;
+  const spokenWord = heroWords[morph > 0.5 ? nextWord : currentWord];
 
-  const localTime = Math.min(timelineTime, morphDuration);
-  const morph = clamp(localTime / morphDuration);
-  const currentPresence = (1 - morph) * scrollPresence;
-  const nextPresence = morph * scrollPresence;
-
-  return [
-    {
-      text: introTexts[rawIndex],
-      small: false,
-      compact: false,
-      style: getTextMorphStyle(currentPresence, 0, true)
-    },
-    {
-      text: introTexts[rawIndex + 1],
-      small: false,
-      compact: false,
-      style: getTextMorphStyle(nextPresence, 0, true)
-    }
-  ];
-}
-
-function getIntroDuration() {
-  return introFirstHoldDuration + introTransitionDurations.reduce((total, duration) => total + duration + introHoldDuration, 0);
+  return (
+    <section className="hero-statement" style={{ opacity: presence }} aria-hidden={presence < 0.01}>
+      <h1 aria-label={`Your first step starts here. We help you find your ${spokenWord}.`}>
+        <span className="hero-statement-copy">
+          <span>Your first step starts here.</span>
+          <span>We help you find your</span>
+        </span>
+        <span className="hero-statement-keyword" aria-hidden="true">
+          {heroWords.map((word, index) => (
+            <span
+              key={word}
+              className="hero-statement-word"
+              style={getTextMorphStyle(
+                index === currentWord ? reveal * (1 - morph) : index === nextWord ? reveal * morph : 0,
+                0,
+                true
+              )}
+            >
+              {word}.
+            </span>
+          ))}
+        </span>
+      </h1>
+    </section>
+  );
 }
 
 type TitleFrame = {
@@ -415,7 +402,7 @@ type TitleFrame = {
 };
 
 const titleFrames: TitleFrame[] = [
-  { text: 'azstudio', progress: 0.08, small: false },
+  { text: '', progress: 0.08, small: false },
   { text: 'service', progress: 1 / 3, small: false },
   { text: 'Projects', progress: 2 / 3, small: true },
   { text: 'where you want to start?', progress: 0.94, small: true, compact: true }
@@ -448,10 +435,8 @@ function getScrollTitleState(progress: number) {
   ];
 }
 
-function GooeyStage({ progress, elapsed }: { progress: number; elapsed: number }) {
-  const titleState = progress < titleFrames[0].progress && elapsed < getIntroDuration()
-    ? getIntroState(elapsed)
-    : getScrollTitleState(progress);
+function GooeyStage({ progress }: { progress: number }) {
+  const titleState = getScrollTitleState(progress);
 
   return (
     <section className="gooey-layer" aria-live="polite">
@@ -689,23 +674,11 @@ function TopNav({ progress }: { progress: number }) {
   );
 }
 
-function BrandMark({ progress, elapsed }: { progress: number; elapsed: number }) {
-  const presence = clamp(map(Math.max(progress, elapsed >= getIntroDuration() ? 0.12 : 0), 0.06, 0.14, 0, 1));
-  const isVisible = presence > 0.01;
-  const isInteractive = presence > 0.12;
-
+function BrandMark() {
   return (
     <a
       className="brand-mark"
       href="/"
-      tabIndex={isInteractive ? 0 : -1}
-      aria-hidden={!isVisible}
-      style={{
-        opacity: presence,
-        transform: `translateY(${(10 * (1 - presence)).toFixed(2)}px)`,
-        visibility: isVisible ? 'visible' : 'hidden',
-        pointerEvents: isInteractive ? 'auto' : 'none'
-      }}
     >
       azstudio
     </a>
@@ -794,6 +767,271 @@ function ProjectsPage() {
   );
 }
 
+function LandingKeyword() {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const startTime = performance.now();
+    let frame: number;
+
+    const tick = (now: number) => {
+      setElapsed(now - startTime);
+      frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  const reveal = clamp((elapsed - 850) / 420);
+  const cycleDuration = heroWordHoldDuration + heroWordMorphDuration;
+  const cycleElapsed = Math.max(0, elapsed - 850 - 420);
+  const cycleIndex = Math.floor(cycleElapsed / cycleDuration);
+  const cycleTime = cycleElapsed % cycleDuration;
+  const morph = cycleTime < heroWordHoldDuration
+    ? 0
+    : easeInOut((cycleTime - heroWordHoldDuration) / heroWordMorphDuration);
+  const currentWord = cycleIndex % heroWords.length;
+  const nextWord = (currentWord + 1) % heroWords.length;
+  const spokenWord = heroWords[morph > 0.5 ? nextWord : currentWord];
+
+  return (
+    <span className="landing-keyword" aria-label={spokenWord}>
+      {heroWords.map((word, index) => (
+        <span
+          key={word}
+          aria-hidden="true"
+          style={getTextMorphStyle(
+            index === currentWord ? reveal * (1 - morph) : index === nextWord ? reveal * morph : 0,
+            0,
+            true
+          )}
+        >
+          {word}.
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function LandingPage() {
+  const [project, setProject] = useState({
+    slug: 'fotland-bryggeri',
+    title: 'Fotland Bryggeri',
+    image: '/PIC/fotland_bryggeri/top_part_background.webp',
+    excerpt: 'A brand identity for a small family brewery, inspired by its local character, history and close relationship with its community.'
+  });
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    getWordPressWorks(controller.signal)
+      .then((works) => {
+        const cards = composeProjectCards(works);
+        const selected = cards.find((card) => card.slug === 'fotland-bryggeri') ?? cards[0];
+        if (!selected) return;
+
+        setProject({
+          slug: selected.slug,
+          title: selected.title,
+          image: selected.image,
+          excerpt: selected.excerpt || 'A clear identity shaped around the people, place and purpose behind the brand.'
+        });
+      })
+      .catch(() => {
+        // Keep the local project preview when the CMS is temporarily unavailable.
+      });
+
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const previousTitle = document.title;
+    const metaDescription = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    const previousDescription = metaDescription?.content;
+
+    document.title = 'Brand Identity and Web Design for Small Businesses | AZ Studio';
+    metaDescription?.setAttribute(
+      'content',
+      'AZ Studio helps small businesses and emerging brands create clear identities, thoughtful websites and meaningful digital experiences.'
+    );
+
+    return () => {
+      document.title = previousTitle;
+      if (previousDescription) metaDescription?.setAttribute('content', previousDescription);
+    };
+  }, []);
+
+  const services = [
+    {
+      number: '01',
+      title: 'Brand Identity',
+      text: 'A clear visual identity that gives your business a recognisable character.'
+    },
+    {
+      number: '02',
+      title: 'Web Design',
+      text: 'A thoughtful website created around your audience and business goals.'
+    },
+    {
+      number: '03',
+      title: 'Creative Support',
+      text: 'Flexible design support for growing brands and everyday communication.'
+    }
+  ];
+
+  const process = [
+    ['Discover', 'We learn about your business, audience and goals.'],
+    ['Define', 'We create a clear direction for the brand and website.'],
+    ['Create', 'We turn the direction into a complete visual experience.'],
+    ['Launch', 'We prepare, test and help you introduce the work.']
+  ];
+
+  return (
+    <>
+      <svg width="0" height="0" aria-hidden="true" focusable="false">
+        <defs>
+          <filter id="threshold">
+            <feColorMatrix
+              in="SourceGraphic"
+              type="matrix"
+              values="1 0 0 0 0
+                      0 1 0 0 0
+                      0 0 1 0 0
+                      0 0 0 255 -140"
+            />
+          </filter>
+        </defs>
+      </svg>
+      <main className="landing-page" aria-label="AZ Studio start a project">
+        <div className="grain" />
+        <StandardPageNav />
+
+        <section className="landing-hero" aria-labelledby="landing-title">
+          <p className="landing-eyebrow">Creative studio based in Norway</p>
+          <h1 id="landing-title">
+            <span>Your first step starts here.</span>
+            <span className="landing-hero-line">We help you find your <LandingKeyword /></span>
+          </h1>
+          <p className="landing-intro">
+            We help small businesses and emerging brands turn early ideas into clear identities,
+            thoughtful websites and meaningful digital experiences.
+          </p>
+          <div className="landing-actions">
+            <a className="landing-primary-link" href="#landing-contact">Start your project</a>
+            <a className="landing-text-link" href="#landing-work">See our work</a>
+          </div>
+          <a className="landing-scroll-cue" href="#landing-introduction" aria-label="Continue to introduction">
+            <span />
+            Scroll to explore
+          </a>
+        </section>
+
+        <section id="landing-introduction" className="landing-introduction landing-section">
+          <p className="landing-section-label">A place to begin</p>
+          <div>
+            <h2>Built for ideas ready to grow.</h2>
+            <p>
+              You may have a strong idea, a new business or a service you believe in, but the way it
+              looks and communicates is not clear yet. AZ Studio helps you shape that idea into a brand
+              people can understand, remember and trust.
+            </p>
+          </div>
+        </section>
+
+        <section className="landing-services landing-section" aria-labelledby="landing-services-title">
+          <div className="landing-section-heading">
+            <p className="landing-section-label">Services</p>
+            <h2 id="landing-services-title">What can we create together?</h2>
+          </div>
+          <div className="landing-service-list">
+            {services.map((service) => (
+              <a key={service.title} href="/service" className="landing-service-row">
+                <span>{service.number}</span>
+                <h3>{service.title}</h3>
+                <p>{service.text}</p>
+                <strong aria-hidden="true">↗</strong>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <section id="landing-work" className="landing-work landing-section" aria-labelledby="landing-work-title">
+          <div className="landing-section-heading">
+            <p className="landing-section-label">Selected work</p>
+            <h2 id="landing-work-title">One idea, shaped into a complete identity.</h2>
+          </div>
+          <a className="landing-project-card" href={`/projects/${project.slug}`}>
+            <img src={project.image} alt={`${project.title} project`} loading="lazy" />
+            <span className="landing-project-shade" />
+            <span className="landing-project-copy">
+              <small>Brand identity · Logo design · Visual direction</small>
+              <strong>{project.title}</strong>
+              <span>{project.excerpt}</span>
+              <em>View the project ↗</em>
+            </span>
+          </a>
+        </section>
+
+        <section className="landing-process landing-section" aria-labelledby="landing-process-title">
+          <div className="landing-section-heading">
+            <p className="landing-section-label">Process</p>
+            <h2 id="landing-process-title">A clear path from idea to launch.</h2>
+          </div>
+          <div className="landing-process-grid">
+            {process.map(([title, text], index) => (
+              <article key={title}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="landing-feedback landing-section" aria-labelledby="landing-feedback-title">
+          <p className="landing-section-label">Client feedback</p>
+          <blockquote>
+            <p id="landing-feedback-title">Client feedback will be added here after approval.</p>
+            <footer>Reserved for a verified client quote</footer>
+          </blockquote>
+        </section>
+
+        <section id="landing-contact" className="landing-contact landing-section" aria-labelledby="landing-contact-title">
+          <div className="landing-contact-copy">
+            <p className="landing-section-label">Start a project</p>
+            <h2 id="landing-contact-title">Ready to take the first step?</h2>
+            <p>Tell us briefly about your idea and what you need help with.</p>
+          </div>
+          <form
+            className="landing-contact-form"
+            action="mailto:mixzq@outlook.com"
+            method="post"
+            encType="text/plain"
+            onSubmit={trackGoogleAdsConversion}
+          >
+            <label>
+              Name
+              <input name="name" type="text" autoComplete="name" required />
+            </label>
+            <label>
+              Email
+              <input name="email" type="email" autoComplete="email" required />
+            </label>
+            <label>
+              Tell us about your project
+              <textarea name="message" rows={4} required />
+            </label>
+            <button type="submit">Start a conversation <span aria-hidden="true">↗</span></button>
+            <small>We usually reply within two working days.</small>
+          </form>
+        </section>
+      </main>
+      <SeoFooter />
+    </>
+  );
+}
+
 function ServicePage() {
   return (
     <RoutePageShell label="AZ Studio service">
@@ -878,7 +1116,7 @@ function ScrollRail({ progress }: { progress: number }) {
 
 export default function App() {
   const [routePath, setRoutePath] = useState(() => window.location.pathname);
-  const { progress, pointerX, pointerY, elapsed } = useStoryboardMotion(routePath === '/' || routePath === '/contact');
+  const { progress, pointerX, pointerY } = useStoryboardMotion(routePath === '/' || routePath === '/contact');
   const isContactFormOpen = routePath === '/contact';
 
   useGridHoverLight();
@@ -932,6 +1170,10 @@ export default function App() {
     return <ServicePage />;
   }
 
+  if (routePath === '/start') {
+    return <LandingPage />;
+  }
+
   if (/^\/projects\/[^/]+\/?$/.test(routePath)) {
     return <WorksFloatingCards progress={0} />;
   }
@@ -955,13 +1197,14 @@ export default function App() {
 
       <main className="site-stage" aria-label="AZ Studio homepage storyboard">
         <div className="grain" />
-        <BrandMark progress={progress} elapsed={elapsed} />
+        <BrandMark />
         <TopNav progress={progress} />
         <ScrollRail progress={progress} />
         <FloatingTalkButton progress={progress} onOpenForm={openContactForm} />
         <WorksFloatingCards progress={progress} />
         <FloatingService progress={progress} pointerX={pointerX} pointerY={pointerY} />
-        <GooeyStage progress={progress} elapsed={elapsed} />
+        <HeroStatement progress={progress} />
+        <GooeyStage progress={progress} />
         <ContactPanel progress={progress} onOpenForm={openContactForm} />
       </main>
 

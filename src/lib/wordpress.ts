@@ -94,6 +94,39 @@ type WordPressImageField =
 const WORDPRESS_API_BASE =
   import.meta.env.VITE_WORDPRESS_API_BASE ??
   'https://public-api.wordpress.com/wp/v2/sites/mixzq9.wordpress.com';
+const WORKS_CACHE_KEY = 'azstudio:wordpress-works:v1';
+const WORKS_CACHE_MAX_AGE = 60 * 1000;
+
+type CachedWorks = {
+  savedAt: number;
+  works: WordPressWork[];
+};
+
+let cachedWorks: CachedWorks | null = null;
+
+export function getCachedWordPressWorks(): WordPressWork[] {
+  if (cachedWorks) return cachedWorks.works;
+
+  try {
+    const stored = window.sessionStorage.getItem(WORKS_CACHE_KEY);
+    if (!stored) return [];
+    const parsed = JSON.parse(stored) as CachedWorks;
+    if (!Number.isFinite(parsed.savedAt) || !Array.isArray(parsed.works)) return [];
+    cachedWorks = parsed;
+    return parsed.works;
+  } catch {
+    return [];
+  }
+}
+
+function cacheWordPressWorks(works: WordPressWork[]) {
+  cachedWorks = { savedAt: Date.now(), works };
+  try {
+    window.sessionStorage.setItem(WORKS_CACHE_KEY, JSON.stringify(cachedWorks));
+  } catch {
+    // Keep the in-memory cache if session storage is unavailable.
+  }
+}
 
 function decodeHtml(value: string) {
   const textarea = document.createElement('textarea');
@@ -192,7 +225,6 @@ async function getWordPressPosts(endpoint: 'projects' | 'posts', signal?: AbortS
   url.searchParams.set('order', 'desc');
   url.searchParams.set('_embed', 'wp:featuredmedia,wp:term');
   url.searchParams.set('acf_format', 'standard');
-  url.searchParams.set('_cacheBust', Date.now().toString());
 
   const response = await fetch(url, {
     headers: {
@@ -255,6 +287,11 @@ async function mapWordPressWork(
 }
 
 export async function getWordPressWorks(signal?: AbortSignal): Promise<WordPressWork[]> {
+  const cached = getCachedWordPressWorks();
+  if (cachedWorks && Date.now() - cachedWorks.savedAt < WORKS_CACHE_MAX_AGE) {
+    return cached;
+  }
+
   let posts: WordPressPost[];
 
   try {
@@ -266,5 +303,7 @@ export async function getWordPressWorks(signal?: AbortSignal): Promise<WordPress
 
   const mediaCache = new Map<string, Promise<string | undefined>>();
   const works = await Promise.all(posts.map((post) => mapWordPressWork(post, mediaCache, signal)));
-  return works.sort((first, second) => first.displayOrder - second.displayOrder);
+  const sortedWorks = works.sort((first, second) => first.displayOrder - second.displayOrder);
+  cacheWordPressWorks(sortedWorks);
+  return sortedWorks;
 }
