@@ -863,6 +863,10 @@ function LandingKeyword() {
   );
 }
 
+function ArrowIcon({ direction = 'right' }: { direction?: 'right' | 'up' | 'down' }) {
+  return <img className={`site-arrow site-arrow-${direction}`} src="/arrow.svg" alt="" aria-hidden="true" />;
+}
+
 function LandingPage() {
   const [project, setProject] = useState({
     slug: 'fotland-bryggeri',
@@ -1001,7 +1005,7 @@ function LandingPage() {
                 <span>{service.number}</span>
                 <h3>{service.title}</h3>
                 <p>{service.text}</p>
-                <strong aria-hidden="true">↗</strong>
+                <strong aria-hidden="true"><ArrowIcon /></strong>
               </a>
             ))}
           </div>
@@ -1020,7 +1024,7 @@ function LandingPage() {
                 <small>Brand identity · Logo design · Visual direction</small>
                 <strong>{project.title}</strong>
                 <span>{project.excerpt}</span>
-                <em>View the project ↗</em>
+                <em>View the project <ArrowIcon direction="up" /></em>
               </span>
             </a>
           </div>
@@ -1075,7 +1079,7 @@ function LandingPage() {
               Tell us about your project
               <textarea name="message" rows={4} required />
             </label>
-            <button type="submit">Start a conversation <span aria-hidden="true">↗</span></button>
+            <button type="submit">Start a conversation <ArrowIcon direction="up" /></button>
             <small>We usually reply within two working days.</small>
           </form>
         </section>
@@ -1111,7 +1115,7 @@ function MobileHomePage() {
           <p>We help small businesses turn ideas into clear brand identities, thoughtful websites and useful digital experiences.</p>
           <div className="mobile-home-actions">
             <a className="landing-primary-link" href="/contact">Start your project</a>
-            <a href="#mobile-work">See our work ↘</a>
+            <a href="#mobile-work">See our work <ArrowIcon direction="down" /></a>
           </div>
         </section>
 
@@ -1126,7 +1130,7 @@ function MobileHomePage() {
                   <small>0{index + 1} / Service</small>
                   <strong>{service.title}</strong>
                   <span>{service.description}</span>
-                  <span aria-hidden="true">Explore service ↗</span>
+                  <span>Explore service <ArrowIcon direction="up" /></span>
                 </span>
               </a>
             ))}
@@ -1154,7 +1158,7 @@ function MobileHomePage() {
               </a>
             ))}
           </div>
-          <a className="mobile-home-more" href="/projects">All projects ↗</a>
+          <a className="mobile-home-more" href="/projects">All projects <ArrowIcon direction="up" /></a>
         </section>
 
         <section className="mobile-home-section mobile-home-process" aria-labelledby="mobile-process-title">
@@ -1166,7 +1170,7 @@ function MobileHomePage() {
         <section className="mobile-home-contact" aria-labelledby="mobile-contact-title">
           <p className="mobile-home-eyebrow">Ready to begin?</p>
           <h2 id="mobile-contact-title">Let’s make your next step clear.</h2>
-          <a className="landing-primary-link" href="/contact">Start your project ↗</a>
+          <a className="landing-primary-link" href="/contact">Start your project <ArrowIcon direction="up" /></a>
         </section>
       </main>
       <SeoFooter />

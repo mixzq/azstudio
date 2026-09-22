@@ -1726,6 +1726,35 @@ body {
   mask-image: linear-gradient(180deg, #000 0%, transparent 70%);
 }
 
+.site-arrow {
+  display: inline-block;
+  width: 22.4px;
+  height: auto;
+  flex: none;
+  margin-left: 0.35em;
+  vertical-align: middle;
+}
+
+.site-arrow-up {
+  transform: rotate(-45deg);
+}
+
+.site-arrow-down {
+  transform: rotate(45deg);
+}
+
+.landing-primary-link .site-arrow,
+.landing-contact-form button .site-arrow {
+  filter: brightness(0);
+}
+
+.landing-primary-link:hover .site-arrow,
+.landing-primary-link:focus-visible .site-arrow,
+.landing-contact-form button:hover .site-arrow,
+.landing-contact-form button:focus-visible .site-arrow {
+  filter: none;
+}
+
 .mobile-home .page-nav {
   position: relative;
   inset: auto;
@@ -1838,7 +1867,7 @@ body {
   text-decoration: none;
 }
 
-.mobile-service-card img {
+.mobile-service-card > img {
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
@@ -2350,9 +2379,13 @@ body {
 }
 
 .landing-service-row strong {
-  font-size: 20px;
-  font-weight: 500;
   transition: transform 180ms ease;
+}
+
+.landing-service-row strong img {
+  display: block;
+  width: 22.4px;
+  margin-left: 0;
 }
 
 .landing-service-row:hover strong {
