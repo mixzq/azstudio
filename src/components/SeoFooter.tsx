@@ -34,7 +34,6 @@ export function SeoFooter() {
             <a href="mailto:mixzq@outlook.com">Email</a>
             <a href="/start">Start</a>
             <a href="https://azstudio.no/">azstudio.no</a>
-            <a href="/sitemap.xml">Sitemap</a>
           </section>
         </nav>
       </div>

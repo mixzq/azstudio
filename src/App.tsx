@@ -1,7 +1,7 @@
 import { CSSProperties, ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { WorkCard, WorksFloatingCards, composeProjectCards } from '@/components/WorksFloatingCards';
 import { SeoFooter } from '@/components/SeoFooter';
-import { getWordPressWorks } from '@/lib/wordpress';
+import { getCachedWordPressWorks, getWordPressWorks } from '@/lib/wordpress';
 
 type Point = {
   x: string;
@@ -57,6 +57,12 @@ const serviceDetailImages = [
   '/PIC/branding.png',
   '/PIC/web development.png',
   '/PIC/subscribe.png'
+];
+
+const serviceDetailMobileImages = [
+  '/PIC/branding-mobile.webp',
+  '/PIC/web-development-mobile.webp',
+  '/PIC/subscribe-mobile.webp'
 ];
 
 const serviceDetails = [
@@ -171,6 +177,19 @@ function lerp(start: number, end: number, factor: number) {
   return start + (end - start) * factor;
 }
 
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
+
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const update = () => setMatches(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, [query]);
+
+  return matches;
+}
+
 function unitToPx(value: string) {
   const raw = String(value).trim();
   const number = parseFloat(raw);
@@ -236,6 +255,7 @@ function useStoryboardMotion(isActive = true) {
       return undefined;
     }
 
+    const previousScrollRestoration = window.history.scrollRestoration;
     if ('scrollRestoration' in window.history) {
       window.history.scrollRestoration = 'manual';
     }
@@ -280,6 +300,7 @@ function useStoryboardMotion(isActive = true) {
     requestTick();
 
     return () => {
+      window.history.scrollRestoration = previousScrollRestoration;
       window.removeEventListener('scroll', requestTick);
       window.removeEventListener('resize', requestTick);
       window.removeEventListener('pointermove', onPointerMove);
@@ -293,8 +314,9 @@ function useStoryboardMotion(isActive = true) {
   return motion;
 }
 
-function useGridHoverLight() {
+function useGridHoverLight(isActive = true) {
   useEffect(() => {
+    if (!isActive) return undefined;
     const root = document.documentElement;
     let raf: number | null = null;
     let x = window.innerWidth / 2;
@@ -333,7 +355,7 @@ function useGridHoverLight() {
         window.cancelAnimationFrame(raf);
       }
     };
-  }, []);
+  }, [isActive]);
 }
 
 function HeroStatement({ progress }: { progress: number }) {
@@ -755,7 +777,7 @@ function ProjectsPage() {
         <div className="projects-index-grid">
           {projects.map((project) => (
             <a key={project.slug} className="projects-index-card" href={`/projects/${project.slug}`}>
-              <img src={project.image} alt="" loading="lazy" />
+              <img src={project.image} srcSet={project.imageSrcSet} sizes="(max-width: 820px) calc(100vw - 44px), (max-width: 1300px) 33vw, 400px" alt="" loading="lazy" decoding="async" />
               <span>
                 <strong>{project.title}</strong>
               </span>
@@ -769,19 +791,46 @@ function ProjectsPage() {
 
 function LandingKeyword() {
   const [elapsed, setElapsed] = useState(0);
+  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const keywordRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    const startTime = performance.now();
-    let frame: number;
+    if (prefersReducedMotion) return undefined;
+    let elapsedBeforePause = 0;
+    let startTime = performance.now();
+    let frame: number | null = null;
+    let isInView = true;
 
     const tick = (now: number) => {
-      setElapsed(now - startTime);
+      elapsedBeforePause = now - startTime;
+      setElapsed(elapsedBeforePause);
       frame = requestAnimationFrame(tick);
     };
 
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, []);
+    const updatePlayback = () => {
+      const shouldPlay = isInView && !document.hidden;
+      if (!shouldPlay && frame !== null) {
+        cancelAnimationFrame(frame);
+        frame = null;
+      } else if (shouldPlay && frame === null) {
+        startTime = performance.now() - elapsedBeforePause;
+        frame = requestAnimationFrame(tick);
+      }
+    };
+
+    const observer = new IntersectionObserver(([entry]) => {
+      isInView = entry.isIntersecting;
+      updatePlayback();
+    });
+    if (keywordRef.current) observer.observe(keywordRef.current);
+    document.addEventListener('visibilitychange', updatePlayback);
+    updatePlayback();
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', updatePlayback);
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
+  }, [prefersReducedMotion]);
 
   const reveal = clamp((elapsed - 850) / 420);
   const cycleDuration = heroWordHoldDuration + heroWordMorphDuration;
@@ -793,16 +842,16 @@ function LandingKeyword() {
     : easeInOut((cycleTime - heroWordHoldDuration) / heroWordMorphDuration);
   const currentWord = cycleIndex % heroWords.length;
   const nextWord = (currentWord + 1) % heroWords.length;
-  const spokenWord = heroWords[morph > 0.5 ? nextWord : currentWord];
+  const spokenWord = prefersReducedMotion ? heroWords[0] : heroWords[morph > 0.5 ? nextWord : currentWord];
 
   return (
-    <span className="landing-keyword" aria-label={spokenWord}>
+    <span ref={keywordRef} className="landing-keyword" aria-label={spokenWord}>
       {heroWords.map((word, index) => (
         <span
           key={word}
           aria-hidden="true"
           style={getTextMorphStyle(
-            index === currentWord ? reveal * (1 - morph) : index === nextWord ? reveal * morph : 0,
+            prefersReducedMotion ? Number(index === 0) : index === currentWord ? reveal * (1 - morph) : index === nextWord ? reveal * morph : 0,
             0,
             true
           )}
@@ -1036,6 +1085,95 @@ function LandingPage() {
   );
 }
 
+function MobileHomePage() {
+  const [projects, setProjects] = useState<WorkCard[]>(() =>
+    composeProjectCards(getCachedWordPressWorks()).filter((project) => project.showOnHome !== false)
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    getWordPressWorks(controller.signal)
+      .then((works) => setProjects(composeProjectCards(works).filter((project) => project.showOnHome !== false)))
+      .catch(() => {
+        // Keep any projects already in the session cache.
+      });
+    return () => controller.abort();
+  }, []);
+
+  return (
+    <>
+      <main className="mobile-home" aria-label="AZ Studio home">
+        <div className="mobile-home-grid" aria-hidden="true" />
+        <StandardPageNav />
+        <section className="mobile-home-hero" aria-labelledby="mobile-home-title">
+          <p className="mobile-home-eyebrow">Creative studio based in Norway</p>
+          <h1 id="mobile-home-title">Your first step starts here.</h1>
+          <p>We help small businesses turn ideas into clear brand identities, thoughtful websites and useful digital experiences.</p>
+          <div className="mobile-home-actions">
+            <a className="landing-primary-link" href="/contact">Start your project</a>
+            <a href="#mobile-work">See our work ↘</a>
+          </div>
+        </section>
+
+        <section className="mobile-home-section" aria-labelledby="mobile-services-title">
+          <p className="mobile-home-eyebrow">What we do</p>
+          <h2 id="mobile-services-title">Design that helps you move forward.</h2>
+          <div className="mobile-service-list">
+            {serviceCards.map((service, index) => (
+              <a key={service.title} className="mobile-service-card" href="/service">
+                <img src={service.image} alt="" loading="lazy" decoding="async" />
+                <span className="mobile-service-copy">
+                  <small>0{index + 1} / Service</small>
+                  <strong>{service.title}</strong>
+                  <span>{service.description}</span>
+                  <span aria-hidden="true">Explore service ↗</span>
+                </span>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <section id="mobile-work" className="mobile-home-section" aria-labelledby="mobile-work-title">
+          <p className="mobile-home-eyebrow">Selected works</p>
+          <h2 id="mobile-work-title">Ideas made visible.</h2>
+          <div className="mobile-work-list">
+            {projects.map((project) => (
+              <a key={project.slug} className="mobile-work-card" href={`/projects/${project.slug}`}>
+                <img
+                  src={project.image}
+                  srcSet={project.imageSrcSet}
+                  sizes="(max-width: 820px) calc(100vw - 44px), 100vw"
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                />
+                <span>
+                  <small>{project.category}</small>
+                  <strong>{project.title}</strong>
+                </span>
+              </a>
+            ))}
+          </div>
+          <a className="mobile-home-more" href="/projects">All projects ↗</a>
+        </section>
+
+        <section className="mobile-home-section mobile-home-process" aria-labelledby="mobile-process-title">
+          <p className="mobile-home-eyebrow">How we work</p>
+          <h2 id="mobile-process-title">Clarity first. Then we create.</h2>
+          <p>We listen, define a direction and build a visual experience you can use with confidence.</p>
+        </section>
+
+        <section className="mobile-home-contact" aria-labelledby="mobile-contact-title">
+          <p className="mobile-home-eyebrow">Ready to begin?</p>
+          <h2 id="mobile-contact-title">Let’s make your next step clear.</h2>
+          <a className="landing-primary-link" href="/contact">Start your project ↗</a>
+        </section>
+      </main>
+      <SeoFooter />
+    </>
+  );
+}
+
 function ServicePage() {
   return (
     <RoutePageShell label="AZ Studio service">
@@ -1057,7 +1195,10 @@ function ServicePage() {
                 </div>
               </div>
               <div className="service-detail-media-slot" aria-hidden="true">
-                <img src={serviceDetailImages[index]} alt="" loading="lazy" />
+                <picture>
+                  <source media="(max-width: 820px)" srcSet={serviceDetailMobileImages[index]} type="image/webp" />
+                  <img src={serviceDetailImages[index]} alt="" loading="lazy" decoding="async" />
+                </picture>
               </div>
             </article>
           ))}
@@ -1120,14 +1261,16 @@ function ScrollRail({ progress }: { progress: number }) {
 
 export default function App() {
   const [routePath, setRoutePath] = useState(() => window.location.pathname);
-  const { progress, pointerX, pointerY } = useStoryboardMotion(routePath === '/' || routePath === '/contact');
+  const isMobile = useMediaQuery('(max-width: 820px)');
+  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const { progress, pointerX, pointerY } = useStoryboardMotion(!isMobile && !prefersReducedMotion && (routePath === '/' || routePath === '/contact'));
   const isContactFormOpen = routePath === '/contact';
 
-  useGridHoverLight();
+  useGridHoverLight(!isMobile && !prefersReducedMotion);
 
   useEffect(() => {
-    scrollToHash();
-  }, []);
+    if (!isMobile && !prefersReducedMotion) scrollToHash();
+  }, [isMobile, prefersReducedMotion]);
 
   useEffect(() => {
     const onPopState = () => setRoutePath(window.location.pathname);
@@ -1180,6 +1323,14 @@ export default function App() {
 
   if (/^\/projects\/[^/]+\/?$/.test(routePath)) {
     return <WorksFloatingCards progress={0} />;
+  }
+
+  if ((isMobile || prefersReducedMotion) && routePath === '/') {
+    return <MobileHomePage />;
+  }
+
+  if ((isMobile || prefersReducedMotion) && routePath === '/contact') {
+    return <ContactFormPage onClose={closeContactForm} />;
   }
 
   return (

@@ -6,6 +6,7 @@ export type WordPressWork = {
   excerpt: string;
   contentHtml: string;
   image?: string;
+  imageSrcSet?: string;
   sourceUrl?: string;
   showOnHome: boolean;
   displayOrder: number;
@@ -101,7 +102,7 @@ type ResponsiveImage = {
 const WORDPRESS_API_BASE =
   import.meta.env.VITE_WORDPRESS_API_BASE ??
   'https://public-api.wordpress.com/wp/v2/sites/mixzq9.wordpress.com';
-const WORKS_CACHE_KEY = 'azstudio:wordpress-works:v2';
+const WORKS_CACHE_KEY = 'azstudio:wordpress-works:v3';
 const WORKS_CACHE_MAX_AGE = 60 * 1000;
 
 type CachedWorks = {
@@ -327,6 +328,7 @@ async function mapWordPressWork(
     resolveImageField(acf?.social_image, post, mediaCache, signal)
   ]);
   const image = cardImage.src ?? imageFromPost(post);
+  const imageSrcSet = cardImage.srcSet ?? responsiveImageFromMedia(post._embedded?.['wp:featuredmedia']?.[0]).srcSet;
 
   return {
     id: `wp-${post.id}`,
@@ -336,6 +338,7 @@ async function mapWordPressWork(
     excerpt,
     contentHtml: post.content?.rendered ?? '',
     image,
+    imageSrcSet,
     sourceUrl: post.link,
     showOnHome: acf ? Boolean(Number(acf.show_on_home)) || acf.show_on_home === true : true,
     displayOrder: Number.isFinite(order) ? order : 100,

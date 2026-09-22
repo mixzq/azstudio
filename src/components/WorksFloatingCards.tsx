@@ -50,6 +50,7 @@ export type WorkCard = {
   title: string;
   category: string;
   image: string;
+  imageSrcSet?: string;
   excerpt: string;
   contentHtml: string;
   sourceUrl?: string;
@@ -68,8 +69,10 @@ type ProjectDetailData = {
   heroImage: string;
   heroBackground: string;
   heroBackgroundSrcSet?: string;
+  mobileHeroBackground?: string;
   logoImages: string[];
   contentImage?: string;
+  mobileContentImages?: string[];
   contentHtml?: string;
   sections: Array<{
     label: string;
@@ -162,10 +165,12 @@ const projectDetails: Record<string, ProjectDetailData> = {
     summary: 'A simple, honest logo direction for a family run brewery built around local ingredients, close community, and the house at the center of the brand.',
     heroImage: '/PIC/fotland_bryggeri/logo.svg',
     heroBackground: '/PIC/fotland_bryggeri/top_part_background.png',
+    mobileHeroBackground: '/PIC/fotland_bryggeri/top-part-mobile.webp',
     logoImages: [
       '/PIC/fotland_bryggeri/logo.svg'
     ],
     contentImage: '/PIC/fotland_bryggeri/content-pic.png',
+    mobileContentImages: [1, 2, 3, 4].map((part) => `/PIC/fotland_bryggeri/content-part-0${part}-1280.webp`),
     sections: [
       {
         label: 'About brand',
@@ -440,6 +445,7 @@ function FloatingElement({ children, className, depth = 0.3 }: FloatingElementPr
 
 export function WorksFloatingCards({ progress }: { progress: number }) {
   const activeSlug = getProjectSlugFromPath();
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 820px)').matches);
   const [cards, setCards] = useState<WorkCard[]>(() => composeCards(getCachedWordPressWorks()));
   const enter = easeOut(map(progress, 0.48, 0.62, 0, 1));
   const leave = easeInOut(map(progress, 0.76, 0.88, 0, 1));
@@ -449,6 +455,13 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
   const homeCards = cards.filter((card) => card.showOnHome !== false);
   const activeWork = cards.find((card) => card.slug === activeSlug) ?? (activeSlug ? createWorkFromDetail(activeSlug) : null);
   const activeDetail = activeWork ? getProjectDetail(activeWork) : null;
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 820px)');
+    const update = () => setIsMobile(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -541,7 +554,7 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
                 } as CSSProperties}
                 aria-label={`Open ${card.title}`}
               >
-                <img src={card.image} alt="" loading="eager" />
+                <img src={card.image} alt="" loading="lazy" decoding="async" />
                 <span className="works-card-meta">
                   <span>{card.category}</span>
                   <strong>{card.title}</strong>
@@ -572,15 +585,20 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
                 </nav>
                 <header id="fotland-overview" className="project-case-hero">
                   <figure className="project-case-media">
-                    <img
-                      className="project-case-background"
-                      src={activeDetail.heroBackground}
-                      srcSet={activeDetail.heroBackgroundSrcSet}
-                      sizes="100vw"
-                      alt=""
-                      decoding="async"
-                      fetchPriority="high"
-                    />
+                    <picture>
+                      {activeDetail.mobileHeroBackground && (
+                        <source media="(max-width: 820px)" srcSet={activeDetail.mobileHeroBackground} type="image/webp" />
+                      )}
+                      <img
+                        className="project-case-background"
+                        src={activeDetail.heroBackground}
+                        srcSet={activeDetail.heroBackgroundSrcSet}
+                        sizes="100vw"
+                        alt=""
+                        decoding="async"
+                        fetchPriority="high"
+                      />
+                    </picture>
                   </figure>
                   <h1 className="project-case-title">{activeDetail.title}</h1>
                 </header>
@@ -613,7 +631,11 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
 
                 {activeDetail.contentImage && (
                   <section id="fotland-presentation" className="project-case-full-image" aria-label="Project presentation">
-                    <img src={activeDetail.contentImage} alt="" />
+                    {isMobile && activeDetail.mobileContentImages
+                      ? activeDetail.mobileContentImages.map((image) => (
+                          <img key={image} src={image} alt="" loading="lazy" decoding="async" />
+                        ))
+                      : <img src={activeDetail.contentImage} alt="" loading="lazy" decoding="async" />}
                   </section>
                 )}
                 {activeDetail.contentHtml && (
