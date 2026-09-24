@@ -492,12 +492,19 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
     const ogImage = document.querySelector<HTMLMetaElement>('meta[property="og:image"]');
 
     metaDescription?.setAttribute('content', description);
-    canonical?.setAttribute('href', window.location.href);
+    const projectUrl = `https://azstudio.no/projects/${activeWork.slug}`;
+    canonical?.setAttribute('href', projectUrl);
+    const ogUrl = document.querySelector<HTMLMetaElement>('meta[property="og:url"]');
+    const twitterTitle = document.querySelector<HTMLMetaElement>('meta[name="twitter:title"]');
+    const twitterDescription = document.querySelector<HTMLMetaElement>('meta[name="twitter:description"]');
+    const twitterImage = document.querySelector<HTMLMetaElement>('meta[name="twitter:image"]');
     ogTitle?.setAttribute('content', activeWork.seoTitle || `${activeWork.title} | AZ Studio`);
+    ogUrl?.setAttribute('content', projectUrl);
     ogDescription?.setAttribute('content', description);
-    if (activeWork.socialImage) {
-      ogImage?.setAttribute('content', activeWork.socialImage);
-    }
+    twitterTitle?.setAttribute('content', activeWork.seoTitle || `${activeWork.title} | AZ Studio`);
+    twitterDescription?.setAttribute('content', description);
+    ogImage?.setAttribute('content', activeWork.socialImage || activeWork.image);
+    twitterImage?.setAttribute('content', activeWork.socialImage || activeWork.image);
 
     return () => {
       document.title = 'AZ Studio | Brand Identity and Digital Experience Studio in Norway';
@@ -506,11 +513,19 @@ export function WorksFloatingCards({ progress }: { progress: number }) {
         'AZ Studio is a Norway based creative studio for brand identity, interactive web design, motion, and digital experience systems.'
       );
       canonical?.setAttribute('href', 'https://azstudio.no/');
+      ogUrl?.setAttribute('content', 'https://azstudio.no/');
       ogTitle?.setAttribute('content', 'AZ Studio');
       ogDescription?.setAttribute(
         'content',
         'Brand identity, interactive web design, motion, and digital experience systems from AZ Studio in Norway.'
       );
+      twitterTitle?.setAttribute('content', 'AZ Studio | Brand Identity and Interactive Web Design in Norway');
+      twitterDescription?.setAttribute(
+        'content',
+        'AZ Studio is a creative studio in Norway designing brand identities, interactive websites, motion systems, and digital experiences for culture, technology, and independent brands.'
+      );
+      ogImage?.setAttribute('content', 'https://azstudio.no/PIC/Frame%20148.png');
+      twitterImage?.setAttribute('content', 'https://azstudio.no/PIC/Frame%20148.png');
     };
   }, [activeWork]);
 

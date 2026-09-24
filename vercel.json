@@ -11,10 +11,21 @@
       "permanent": false
     }
   ],
+  "functions": {
+    "api/seo.js": {
+      "includeFiles": "dist/index.html"
+    }
+  },
   "rewrites": [
+    { "source": "/sitemap.xml", "destination": "/api/seo?path=/sitemap.xml" },
+    { "source": "/start", "destination": "/api/seo?path=/start" },
+    { "source": "/service", "destination": "/api/seo?path=/service" },
+    { "source": "/projects", "destination": "/api/seo?path=/projects" },
+    { "source": "/contact", "destination": "/api/seo?path=/contact" },
+    { "source": "/projects/:slug", "destination": "/api/seo?path=/projects/:slug" },
     {
       "source": "/((?!assets/|fonts/|favicon.ico|robots.txt|sitemap.xml).*)",
-      "destination": "/index.html"
+      "destination": "/api/seo?path=/not-found"
     }
   ]
 }

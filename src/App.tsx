@@ -898,23 +898,6 @@ function LandingPage() {
     return () => controller.abort();
   }, []);
 
-  useEffect(() => {
-    const previousTitle = document.title;
-    const metaDescription = document.querySelector<HTMLMetaElement>('meta[name="description"]');
-    const previousDescription = metaDescription?.content;
-
-    document.title = 'Brand Identity and Web Design for Small Businesses | AZ Studio';
-    metaDescription?.setAttribute(
-      'content',
-      'AZ Studio helps small businesses and emerging brands create clear identities, thoughtful websites and meaningful digital experiences.'
-    );
-
-    return () => {
-      document.title = previousTitle;
-      if (previousDescription) metaDescription?.setAttribute('content', previousDescription);
-    };
-  }, []);
-
   const services = [
     {
       number: '01',
@@ -1271,6 +1254,43 @@ export default function App() {
   const isContactFormOpen = routePath === '/contact';
 
   useGridHoverLight(!isMobile && !prefersReducedMotion);
+
+  useEffect(() => {
+    const pageMetadata: Record<string, { title: string; description: string }> = {
+      '/': {
+        title: 'AZ Studio | Brand Identity and Interactive Web Design in Norway',
+        description: 'AZ Studio is a creative studio in Norway designing brand identities, interactive websites, motion systems, and digital experiences for culture, technology, and independent brands.'
+      },
+      '/start': {
+        title: 'Brand Identity and Web Design for Small Businesses | AZ Studio',
+        description: 'Take the first step with AZ Studio. Explore brand identity, web design and creative support for small businesses and emerging brands in Norway.'
+      },
+      '/service': {
+        title: 'Brand Identity, Web Design and Creative Support | AZ Studio',
+        description: 'Explore AZ Studio services in brand identity, web design and ongoing creative support for businesses ready to build a clearer presence.'
+      },
+      '/projects': {
+        title: 'Selected Brand Identity and Web Design Projects | AZ Studio',
+        description: 'Explore selected AZ Studio projects in brand identity, logo design and digital experiences for independent brands and small businesses.'
+      },
+      '/contact': {
+        title: 'Contact AZ Studio | Start a Brand or Web Project',
+        description: 'Get in touch with AZ Studio in Norway to discuss brand identity, web design or a new creative project.'
+      }
+    };
+    const metadata = pageMetadata[routePath];
+    if (!metadata) return;
+
+    const url = `https://azstudio.no${routePath === '/' ? '/' : routePath}`;
+    document.title = metadata.title;
+    document.querySelector<HTMLMetaElement>('meta[name="description"]')?.setAttribute('content', metadata.description);
+    document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.setAttribute('href', url);
+    document.querySelector<HTMLMetaElement>('meta[property="og:url"]')?.setAttribute('content', url);
+    document.querySelector<HTMLMetaElement>('meta[property="og:title"]')?.setAttribute('content', metadata.title);
+    document.querySelector<HTMLMetaElement>('meta[property="og:description"]')?.setAttribute('content', metadata.description);
+    document.querySelector<HTMLMetaElement>('meta[name="twitter:title"]')?.setAttribute('content', metadata.title);
+    document.querySelector<HTMLMetaElement>('meta[name="twitter:description"]')?.setAttribute('content', metadata.description);
+  }, [routePath]);
 
   useEffect(() => {
     if (!isMobile && !prefersReducedMotion) scrollToHash();

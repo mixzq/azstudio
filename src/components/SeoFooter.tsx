@@ -40,10 +40,6 @@ export function SeoFooter() {
 
       <div className="seo-footer-bottom">
         <p>© 2026 AZ Studio. All rights reserved.</p>
-        <div>
-          <a href="/privacy">Privacy Policy</a>
-          <a href="/terms">Terms</a>
-        </div>
       </div>
     </footer>
   );
