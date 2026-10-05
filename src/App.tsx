@@ -1,4 +1,4 @@
-import { CSSProperties, ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { CSSProperties, ReactNode, type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { WorkCard, WorksFloatingCards, composeProjectCards } from '@/components/WorksFloatingCards';
 import { SeoFooter } from '@/components/SeoFooter';
 import { getCachedWordPressWorks, getWordPressWorks } from '@/lib/wordpress';
@@ -136,6 +136,8 @@ const projectManifestoText = 'Design for clear brands, useful websites, and visu
 
 const googleAdsConversionId = 'AW-17700578992/udXfCOaJs7ObELDNpfhB';
 
+type ContactFormStatus = 'idle' | 'sending' | 'success' | 'error';
+
 function trackGoogleAdsConversion() {
   window.dataLayer = window.dataLayer || [];
   window.gtag = window.gtag || function gtagFallback(...args: unknown[]) {
@@ -144,6 +146,50 @@ function trackGoogleAdsConversion() {
   window.gtag('event', 'conversion', {
     send_to: googleAdsConversionId
   });
+}
+
+async function submitContactForm(
+  event: FormEvent<HTMLFormElement>,
+  setStatus: (status: ContactFormStatus) => void
+) {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const formData = new FormData(form);
+
+  setStatus('sending');
+
+  try {
+    const response = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: formData.get('name'),
+        email: formData.get('email'),
+        project: formData.get('project'),
+        message: formData.get('message'),
+        website: formData.get('website'),
+        source: window.location.pathname
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Contact request failed');
+    }
+
+    form.reset();
+    setStatus('success');
+    trackGoogleAdsConversion();
+  } catch (error) {
+    console.error('Contact form submission failed', error);
+    setStatus('error');
+  }
+}
+
+function contactStatusText(status: ContactFormStatus) {
+  if (status === 'success') return 'Thank you. Your message has been sent.';
+  if (status === 'error') return 'The message could not be sent. Please try again or email mixzq@outlook.com.';
+  return '';
 }
 
 function getContentsquarePath() {
@@ -868,6 +914,7 @@ function ArrowIcon({ direction = 'right' }: { direction?: 'right' | 'up' | 'down
 }
 
 function LandingPage() {
+  const [contactStatus, setContactStatus] = useState<ContactFormStatus>('idle');
   const [project, setProject] = useState({
     slug: 'fotland-bryggeri',
     title: 'Fotland Bryggeri',
@@ -1045,11 +1092,12 @@ function LandingPage() {
           </div>
           <form
             className="landing-contact-form"
-            action="mailto:mixzq@outlook.com"
-            method="post"
-            encType="text/plain"
-            onSubmit={trackGoogleAdsConversion}
+            onSubmit={(event) => void submitContactForm(event, setContactStatus)}
           >
+            <label className="contact-honeypot" aria-hidden="true">
+              Website
+              <input name="website" type="text" tabIndex={-1} autoComplete="off" />
+            </label>
             <label>
               Name
               <input name="name" type="text" autoComplete="name" required />
@@ -1062,7 +1110,12 @@ function LandingPage() {
               Tell us about your project
               <textarea name="message" rows={4} required />
             </label>
-            <button type="submit">Start a conversation <ArrowIcon direction="up" /></button>
+            <button type="submit" disabled={contactStatus === 'sending'}>
+              {contactStatus === 'sending' ? 'Sending…' : 'Start a conversation'} <ArrowIcon direction="up" />
+            </button>
+            <span className={`contact-form-status contact-form-status-${contactStatus}`} role="status" aria-live="polite">
+              {contactStatusText(contactStatus)}
+            </span>
             <small>We usually reply within two working days.</small>
           </form>
         </section>
@@ -1196,6 +1249,8 @@ function ServicePage() {
 }
 
 function ContactFormPage({ onClose }: { onClose: () => void }) {
+  const [contactStatus, setContactStatus] = useState<ContactFormStatus>('idle');
+
   return (
     <section className="contact-form-page" aria-label="Contact form">
       <button className="work-detail-close" type="button" onClick={onClose}>
@@ -1203,11 +1258,12 @@ function ContactFormPage({ onClose }: { onClose: () => void }) {
       </button>
       <form
         className="contact-form-shell"
-        action="mailto:mixzq@outlook.com"
-        method="post"
-        encType="text/plain"
-        onSubmit={trackGoogleAdsConversion}
+        onSubmit={(event) => void submitContactForm(event, setContactStatus)}
       >
+        <label className="contact-honeypot" aria-hidden="true">
+          Website
+          <input name="website" type="text" tabIndex={-1} autoComplete="off" />
+        </label>
         <div className="contact-form-heading">
           <p>Start a project</p>
           <h1>where you want to start?</h1>
@@ -1230,9 +1286,12 @@ function ContactFormPage({ onClose }: { onClose: () => void }) {
             <textarea name="message" rows={5} required />
           </label>
         </div>
-        <button className="talk-button contact-form-submit" type="submit">
-          Send message
+        <button className="talk-button contact-form-submit" type="submit" disabled={contactStatus === 'sending'}>
+          {contactStatus === 'sending' ? 'Sending…' : 'Send message'}
         </button>
+        <span className={`contact-form-status contact-form-status-${contactStatus}`} role="status" aria-live="polite">
+          {contactStatusText(contactStatus)}
+        </span>
       </form>
     </section>
   );

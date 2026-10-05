@@ -1599,6 +1599,36 @@ body {
   box-shadow: 0 34px 90px rgba(0, 0, 0, 0.54);
 }
 
+.contact-honeypot {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+}
+
+.contact-form-status {
+  min-height: 1.4em;
+  color: rgba(241, 238, 231, 0.62);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.contact-form-status-success {
+  color: #a9d7a5;
+}
+
+.contact-form-status-error {
+  color: #efaaa2;
+}
+
+.contact-form-shell button:disabled,
+.landing-contact-form button:disabled {
+  cursor: wait;
+  opacity: 0.56;
+}
+
 .contact-form-heading {
   display: grid;
   gap: 12px;
