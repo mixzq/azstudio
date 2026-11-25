@@ -18,7 +18,7 @@ export default async function handler(request, response) {
   }
   if (!body || typeof body !== 'object' || Array.isArray(body)) return response.status(400).json({ error: 'Invalid submission' });
   if (body.website) return response.status(200).json({ ok: true });
-  const { ratings, notes = {}, references = '', questions = '', email = '', submissionId } = body;
+  const { ratings, notes = {}, references = '', questions = '', submissionId } = body;
   if (!ratings || typeof ratings !== 'object' || Array.isArray(ratings)
     || Object.keys(ratings).length !== questionIds.length
     || questionIds.some(id => !Number.isInteger(ratings[id]) || ratings[id] < 1 || ratings[id] > 5)
@@ -26,8 +26,6 @@ export default async function handler(request, response) {
     || Object.keys(notes).some(id => !sectionIds.includes(id))
     || sectionIds.some(id => !validText(notes[id], 2000))
     || !validText(references, 3000) || !validText(questions, 3000)
-    || !validText(email, 254)
-    || (clean(email) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean(email)))
     || typeof submissionId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(submissionId)) {
     return response.status(400).json({ error: 'Invalid or incomplete answers' });
   }
@@ -36,11 +34,11 @@ export default async function handler(request, response) {
     questionnaire: 'Finndinskatt', version: 1, submissionId,
     ratings: Object.fromEntries(questionIds.map(id => [id, ratings[id]])),
     notes: Object.fromEntries(sectionIds.map(id => [id, clean(notes[id])])),
-    references: clean(references), questions: clean(questions), email: clean(email).toLowerCase()
+    references: clean(references), questions: clean(questions)
   };
   const text = [
     'Finndinskatt · Spørreskjema om ny nettside',
-    `Referanse: ${submissionId}`, `Ønsker en kopi: ${record.email ? 'Ja' : 'Nei'}`, `Epost for kopi: ${record.email || 'Ikke oppgitt'}`, '',
+    `Referanse: ${submissionId}`, '',
     ...sections.flatMap(section => [
       section.title, ...section.questions.map(([id, question]) => `${id}. ${question}\nSvar: ${ratings[id]} av 5 (${scale[ratings[id] - 1]})`),
       `Andre tanker: ${record.notes[section.id] || 'Ikke oppgitt'}`, ''
@@ -55,7 +53,6 @@ export default async function handler(request, response) {
       body: JSON.stringify({
         from: process.env.CONTACT_FROM_EMAIL ?? 'AZ Studio Website <onboarding@resend.dev>',
         to: [process.env.SURVEY_TO_EMAIL ?? process.env.CONTACT_TO_EMAIL ?? 'mixzq@outlook.com'],
-        ...(record.email ? { reply_to: record.email } : {}),
         subject: 'Finndinskatt: nye svar om nettsiden', text,
         attachments: [{ filename: 'finndinskatt-svar.json', content: Buffer.from(JSON.stringify(record, null, 2)).toString('base64') }]
       }),
