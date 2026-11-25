@@ -19,6 +19,12 @@
     </header>
     <form id="survey-form" novalidate>
       <div id="form-content"></div>
+      <section class="email-copy" aria-labelledby="email-copy-title">
+        <h2 id="email-copy-title">Vil du ha en kopi av svarene dine?</h2>
+        <p>Legg igjen epostadressen din, så kan vi sende deg en kopi.</p>
+        <label class="text-field" for="email"><span>Epostadresse<span class="optional">Valgfritt</span></span><input id="email" name="email" type="email" inputmode="email" autocomplete="email" maxlength="254" aria-describedby="email-hint"><small id="email-hint">Brukes bare til å sende deg denne kopien.</small></label>
+        <p id="email-error" class="question-error" hidden>Skriv inn en gyldig epostadresse, eller la feltet stå tomt.</p>
+      </section>
       <div class="trap" aria-hidden="true"><label for="website">La dette feltet stå tomt</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
       <p class="submission-note">Svarene sendes til AZ Studio og brukes til å planlegge nettsiden. Ikke skriv sensitive personopplysninger.</p>
       <p id="form-message" class="form-message" role="alert" hidden></p>
