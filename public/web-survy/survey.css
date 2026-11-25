@@ -6,3 +6,5 @@
 
 .email-copy{margin:0 0 26px;padding:25px 0 0;border-top:1px solid var(--line);scroll-margin-top:28px}.email-copy h2{font-size:18px;font-weight:650;line-height:1.6;margin:0 0 8px}.email-copy>p{font-size:15px;line-height:1.8;color:var(--muted);margin:0}.email-copy .text-field{margin-top:17px}.email-copy input{display:block;width:100%;min-height:46px;border:1px solid #cecfca;border-radius:3px;background:transparent;padding:11px 12px;font-size:16px;color:#232422}.email-copy small{display:block;color:var(--muted);font-size:12px;line-height:1.8;margin-top:7px}.email-copy input[aria-invalid=true]{border:2px solid var(--error);background:var(--error-bg)}.email-copy #email-error{color:var(--error);margin:8px 0 0;font-size:14px}
 @media print{.email-copy{break-inside:avoid}}
+
+.success-panel #success-title:focus{outline:none}

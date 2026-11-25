@@ -89,11 +89,6 @@ function setSending(value) {
   for (const element of form.querySelectorAll('button, input, textarea')) element.disabled = value;
   document.querySelector('#submit').textContent = value ? 'Sender …' : 'Send inn svar';
 }
-function downloadAnswers() {
-  const url = URL.createObjectURL(new Blob([JSON.stringify({ version: 1, ...state }, null, 2)], { type: 'application/json' }));
-  const link = document.createElement('a'); link.href = url; link.download = 'svar.json'; link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 form.addEventListener('submit', async event => {
   event.preventDefault();
   if (sending || finished || !validate()) return;
@@ -108,22 +103,17 @@ form.addEventListener('submit', async event => {
     if (!response.ok || !result.ok) throw new Error('Submission failed');
     finished = true;
     try { localStorage.removeItem(key); } catch {}
-    form.innerHTML = '<div class="success-panel"><h2 id="success-title" tabindex="-1">Takk for svarene dine!</h2><p>Skjemaet er sendt inn. Du kan nå lukke siden.</p><button type="button" id="download" class="button secondary">Last ned svarene</button></div>';
+    form.innerHTML = '<div class="success-panel"><h2 id="success-title" tabindex="-1">Takk for svarene dine!</h2><p>Skjemaet er sendt inn. Du kan nå lukke siden.</p></div>';
     if (state.email) {
       const status = document.createElement('p');
       status.id = 'copy-status';
       status.textContent = `Du har bedt om en kopi til ${state.email}. Epostadressen er sendt sammen med svarene dine.`;
-      document.querySelector('#download').before(status);
+      document.querySelector('.success-panel').append(status);
     }
-    document.querySelector('#download').addEventListener('click', downloadAnswers);
     document.querySelector('#success-title').focus();
   } catch {
     setSending(false);
-    showError('Svarene kunne ikke sendes. Prøv igjen, eller last ned svarene og send filen til mixzq@outlook.com.');
-    if (!document.querySelector('#download-backup')) {
-      const backup = document.createElement('button'); backup.id = 'download-backup'; backup.type = 'button';
-      backup.className = 'button secondary'; backup.textContent = 'Last ned svarene';
-      backup.addEventListener('click', downloadAnswers); document.querySelector('.submit-row').append(backup);
-    }
+    showError('Svarene kunne ikke sendes. Prøv igjen, eller kontakt oss på mixzq@outlook.com. Svarene dine er fortsatt tilgjengelige i skjemaet.');
+
   }
 });
