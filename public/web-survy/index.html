@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="nb">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#F6F6F5">
+  <meta name="description" content="Et enkelt spørreskjema om dine ønsker for en ny nettside.">
+  <title>Spørreskjema om ny nettside</title>
+  <link rel="stylesheet" href="/web-survy/survey.css">
+  <script type="module" src="/web-survy/survey.js"></script>
+</head>
+<body>
+  <main class="survey">
+    <header class="survey-header">
+      <p class="survey-topic">Din nye nettside</p>
+      <h1><span>Spørreskjema</span></h1>
+      <p class="introduction">23 påstander om hva du ønsker deg. Velg det som passer best for deg.</p>
+      <p class="instructions">1 betyr «stemmer ikke», 5 betyr «stemmer helt».<br>Det finnes ingen riktige eller gale svar.</p>
+    </header>
+    <form id="survey-form" novalidate>
+      <div id="form-content"></div>
+      <div class="trap" aria-hidden="true"><label for="website">La dette feltet stå tomt</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
+      <p class="submission-note">Svarene sendes til AZ Studio og brukes til å planlegge nettsiden. Ikke skriv sensitive personopplysninger.</p>
+      <p id="form-message" class="form-message" role="alert" hidden></p>
+      <div class="submit-row"><button id="submit" class="button" type="submit">Send inn svar</button></div>
+    </form>
+    <noscript><p>Aktiver JavaScript for å fylle ut skjemaet, eller kontakt mixzq@outlook.com.</p></noscript>
+  </main>
+</body>
+</html>

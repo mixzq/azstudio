@@ -17,6 +17,8 @@
     }
   },
   "rewrites": [
+    { "source": "/web-survy", "destination": "/web-survy/index.html" },
+    { "source": "/web-survy/", "destination": "/web-survy/index.html" },
     { "source": "/sitemap.xml", "destination": "/api/seo?path=/sitemap.xml" },
     { "source": "/start", "destination": "/api/seo?path=/start" },
     { "source": "/service", "destination": "/api/seo?path=/service" },
@@ -24,7 +26,7 @@
     { "source": "/contact", "destination": "/api/seo?path=/contact" },
     { "source": "/projects/:slug", "destination": "/api/seo?path=/projects/:slug" },
     {
-      "source": "/((?!assets/|fonts/|favicon.ico|robots.txt|sitemap.xml).*)",
+      "source": "/((?!web-survy/|assets/|fonts/|favicon.ico|robots.txt|sitemap.xml).*)",
       "destination": "/api/seo?path=/not-found"
     }
   ]
